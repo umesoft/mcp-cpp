@@ -10,4 +10,4 @@ add_library(mcp-cpp STATIC
 
 target_include_directories(mcp-cpp PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
-target_link_libraries(mcp-cpp PRIVATE ssl crypto)
+target_link_libraries(mcp-cpp PRIVATE ssl crypto uuid)

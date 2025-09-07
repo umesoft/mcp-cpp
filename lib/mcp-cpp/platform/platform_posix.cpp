@@ -16,24 +16,13 @@
  */
 
 #include "platform.h"
+#include <uuid/uuid.h>
 
 std::string CreateSessionId()
 {
-/*
-	UUID uuid;
-	UuidCreateSequential(&uuid);
-
-	RPC_CSTR strUuid;
-	if (UuidToStringA(&uuid, &strUuid) != RPC_S_OK)
-	{
-		return "";
-	}
-
-	std::string session_id = reinterpret_cast<const char*>(strUuid);
-
-	RpcStringFreeA(&strUuid);
-
-	return session_id;
-*/
-	return "aaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+	uuid_t uuid;
+	uuid_generate(uuid);
+	char strUuid[37];
+	uuid_unparse(uuid, strUuid);
+	return std::string(strUuid);
 }
