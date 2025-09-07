@@ -67,7 +67,10 @@ static void mg_json_rpc2_err(struct mg_rpc_req* r, int code, const char* fmt, ..
 
 McpServer::McpServer(const char* server_name)
 	: m_server_name(server_name)
-	, m_authorization(false)
+	, m_use_tls(false)
+	, m_cert_file()
+	, m_key_file()
+	, m_use_authorization(false)
 	, m_authorization_servers()
 	, m_scopes_supported()
 	, m_url()
@@ -85,12 +88,15 @@ void McpServer::cbEvHander(void* connection, int event_code, void* event_data)
 
 	if (event_code == MG_EV_ACCEPT)
 	{
-		struct mg_tls_opts opts = 
-		{ 
-			.cert = mg_file_read(&mg_fs_posix, "/home/ko1/my_sign/cert.pem"),
-			.key = mg_file_read(&mg_fs_posix, "/home/ko1/my_sign/key.pem")
-		};
-		mg_tls_init(conn, &opts);
+		if (self->m_use_tls)
+		{
+			struct mg_tls_opts opts = 
+			{ 
+				.cert = mg_file_read(&mg_fs_posix, self->m_cert_file.c_str()),
+				.key = mg_file_read(&mg_fs_posix, self->m_key_file.c_str())
+			};
+			mg_tls_init(conn, &opts);
+		}
 	}
 	else if (event_code == MG_EV_HTTP_MSG)
 	{
@@ -131,7 +137,7 @@ void McpServer::cbEvHander(void* connection, int event_code, void* event_data)
 			}
 			else if (mg_strcasecmp(hm->method, mg_str("POST")) == 0)
 			{
-				if (self->m_authorization)
+				if (self->m_use_authorization)
 				{
 					bool authorization_chk = false;
 
@@ -223,7 +229,7 @@ void McpServer::cbEvHander(void* connection, int event_code, void* event_data)
 				}
 			}
 		}
-		else if (self->m_authorization && mg_strcmp(hm->uri, mg_str(("/.well-known/oauth-protected-resource" + self->m_entry_point).c_str())) == 0)
+		else if (self->m_use_authorization && mg_strcmp(hm->uri, mg_str(("/.well-known/oauth-protected-resource" + self->m_entry_point).c_str())) == 0)
 		{
 			if (mg_strcasecmp(hm->method, mg_str("GET")) == 0)
 			{
@@ -566,6 +572,24 @@ void McpServer::cbToolsCall(void* rpc_req)
 	}
 }
 
+void McpServer::SetTls(
+	const char* cert_file,
+	const char* key_file
+)
+{
+	m_cert_file = cert_file;
+	m_key_file = key_file;
+
+	if (!m_cert_file.empty() && !m_key_file.empty())
+	{
+		m_use_tls = true;
+	}
+	else
+	{
+		m_use_tls = false;
+	}
+}
+
 void McpServer::SetAuthorization(const char* authorization_servers, const char* scopes_supported)
 {
 	m_authorization_servers = authorization_servers;
@@ -573,11 +597,11 @@ void McpServer::SetAuthorization(const char* authorization_servers, const char* 
 
 	if (!m_authorization_servers.empty() && !m_scopes_supported.empty())
 	{
-		m_authorization = true;
+		m_use_authorization = true;
 	}
 	else
 	{
-		m_authorization = false;
+		m_use_authorization = false;
 	}
 }
 
@@ -644,28 +668,28 @@ bool McpServer::Run(const char* url, ulong session_timeout)
 	mg_mgr_free(&mgr);
 }
 
-bool McpServer::UpdateUrlPath(const char* url)
+bool McpServer::UpdateUrlPath(const std::string& url)
 {
-	m_url = url;
-
-	std::string::size_type scheme_pos = m_url.find("://");
-	if (scheme_pos == std::string::npos)
+	if (m_use_tls)
 	{
-		return false;
+		m_url = "https://";
 	}
+	else
+	{
+		m_url = "http://";
+	}
+	m_url += url;
 
-	std::string withoutScheme = m_url.substr(scheme_pos + 3);
-
-	std::string::size_type pos = withoutScheme.find('/');
+	std::string::size_type pos = url.find('/');
 	if (pos == std::string::npos) 
 	{
-		m_host = m_url;
+		m_host = url;
 		m_entry_point = "/";
 	}
 	else 
 	{
-		m_host = m_url.substr(0, scheme_pos + 3 + pos);
-		m_entry_point = withoutScheme.substr(pos);
+		m_host = url.substr(0, pos);
+		m_entry_point = url.substr(pos);
 	}
 
 	return true;

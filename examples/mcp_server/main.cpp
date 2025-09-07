@@ -16,6 +16,7 @@
  */
 
 #include "mcp-cpp/mcp_server.h"
+#include <time.h>
 
 using namespace Mcp;
 
@@ -23,49 +24,37 @@ int main()
 {
 	McpServer server("MCP Test");
 
-    /*
+#if 0
+	server.SetTls(
+		"cert.pem",
+		"key.pem"
+	);
+
 	server.SetAuthorization(
 		"\"https://***tenant name***.us.auth0.com\"",
 		"\"***api permission***\""
 	);
-    */
+#endif
 
 	server.AddTool(
-		"get_channels",
-		"Returns a list of available TV channels.",
+		"get_current_time",
+		"指定された場所の現在時刻を取得",
 		std::vector<McpServer::McpProperty> {
-			{ "location", McpServer::PROPERTY_STRING, "location of TV", true }
+			{ "location", McpServer::PROPERTY_STRING, "場所", false }
 		},
-		std::vector<McpServer::McpProperty> {
-			{ "channel_no", McpServer::PROPERTY_STRING, "channel no", true },
-			{ "service_name", McpServer::PROPERTY_STRING, "service name", true }
-		},
+		std::vector<McpServer::McpProperty> {},
 		[](const std::map<std::string, std::string>& args) -> std::vector<McpServer::McpContent> {
 			std::vector<McpServer::McpContent> contents;
 
+			char datetime_str[20];
+			time_t now = time(NULL);
+    		struct tm* tm_info = localtime(&now);
+    		strftime(datetime_str, sizeof(datetime_str), "%Y/%m/%d %H:%M:%S", tm_info);
+
 			McpServer::McpContent content{
-				.property_type = McpServer::PROPERTY_OBJECT,
-				.value = ""
+				.property_type = McpServer::PROPERTY_STRING,
+				.value = datetime_str,
 			};
-
-			content.properties.push_back({
-				.property_name = "channel_no",
-				.value = "011"
-				});
-			content.properties.push_back({
-				.property_name = "service_name",
-				.value = "NHK G"
-				});
-			contents.push_back(content);
-
-			content.properties.push_back({
-				.property_name = "channel_no",
-				.value = "021"
-				});
-			content.properties.push_back({
-				.property_name = "service_name",
-				.value = "ETV"
-				});
 			contents.push_back(content);
 
 			return contents;
@@ -73,8 +62,7 @@ int main()
 	);
 
 	server.Run(
-		// "http://localhost:8000/mcp",
-		"https://localhost:8000/mcp",
+		"localhost:8000/mcp",
 		10 * 60 * 1000
 	);
 

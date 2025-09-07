@@ -50,6 +50,10 @@ public:
 		std::vector<McpPropertyValue> properties;
 	};
 
+	void SetTls(
+		const char* cert_file,
+		const char* key_file
+	);
 	void SetAuthorization(
 		const char* authorization_servers,
 		const char* scopes_supported
@@ -67,14 +71,17 @@ public:
 
 private:
 	std::string m_server_name;
-	bool m_authorization;
+	bool m_use_tls;
+	std::string m_cert_file;
+	std::string m_key_file;
+	bool m_use_authorization;
 	std::string m_authorization_servers;
 	std::string m_scopes_supported;
 	std::string m_url;
 	std::string m_host;
 	std::string m_entry_point;
 
-	bool UpdateUrlPath(const char* url);
+	bool UpdateUrlPath(const std::string& url);
 
 	struct McpTool {
 		std::string name;
