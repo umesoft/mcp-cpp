@@ -14,5 +14,5 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(lib/mcp-cpp)
 
-add_subdirectory(examples/mcp_server EXCLUDE_FROM_ALL)
-add_subdirectory(examples/mcp_client EXCLUDE_FROM_ALL)
+add_subdirectory(examples/mcp_server)
+add_subdirectory(examples/mcp_client)
