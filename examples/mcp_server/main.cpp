@@ -52,7 +52,7 @@ int main()
     		strftime(datetime_str, sizeof(datetime_str), "%Y/%m/%d %H:%M:%S", tm_info);
 
 			McpServer::McpContent content{
-				.property_type = McpServer::PROPERTY_STRING,
+				.property_type = McpServer::PROPERTY_TEXT,
 				.value = datetime_str,
 			};
 			contents.push_back(content);

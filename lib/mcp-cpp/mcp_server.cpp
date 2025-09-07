@@ -451,8 +451,12 @@ std::string McpServer::GetPropertyType(PropertyType type)
 	switch (type) {
 	case PROPERTY_NUMBER:
 		return "number";
+	case PROPERTY_TEXT:
+		return "text";
 	case PROPERTY_STRING:
 		return "string";
+	case PROPERTY_OBJECT:
+		return "object";
 	default:
 		return "unknown";
 	}

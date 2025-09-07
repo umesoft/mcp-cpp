@@ -31,6 +31,7 @@ public:
 
 	enum PropertyType {
 		PROPERTY_NUMBER = 1,
+		PROPERTY_TEXT,
 		PROPERTY_STRING,
 		PROPERTY_OBJECT
 	};
