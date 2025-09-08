@@ -42,5 +42,11 @@
 
 # Work folder
 build/
+
+# VSCode
 .vscode/
 
+# VisualStudio
+.vs/
+x64/
+*.user
