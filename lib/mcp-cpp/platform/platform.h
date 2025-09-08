@@ -17,6 +17,11 @@
 
 #pragma once
 
+#if defined(_MSC_VER) && _MSC_VER >= 1700
+#define _CRT_RAND_S
+#include <stdlib.h>
+#endif
+
 #include <string>
 
 std::string CreateSessionId();

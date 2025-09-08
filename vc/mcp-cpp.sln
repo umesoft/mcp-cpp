@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35931.197
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mcp-cpp", "mcp-cpp\mcp-cpp.vcxproj", "{C26507C5-E66C-4ED4-A171-8FD51D5199B5}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mcp-server", "mcp-server\mcp-server.vcxproj", "{A7A8B422-F638-423B-A49A-8B2B973A49A7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C26507C5-E66C-4ED4-A171-8FD51D5199B5} = {C26507C5-E66C-4ED4-A171-8FD51D5199B5}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C26507C5-E66C-4ED4-A171-8FD51D5199B5}.Debug|x64.ActiveCfg = Debug|x64
+		{C26507C5-E66C-4ED4-A171-8FD51D5199B5}.Debug|x64.Build.0 = Debug|x64
+		{C26507C5-E66C-4ED4-A171-8FD51D5199B5}.Release|x64.ActiveCfg = Release|x64
+		{C26507C5-E66C-4ED4-A171-8FD51D5199B5}.Release|x64.Build.0 = Release|x64
+		{A7A8B422-F638-423B-A49A-8B2B973A49A7}.Debug|x64.ActiveCfg = Debug|x64
+		{A7A8B422-F638-423B-A49A-8B2B973A49A7}.Debug|x64.Build.0 = Debug|x64
+		{A7A8B422-F638-423B-A49A-8B2B973A49A7}.Release|x64.ActiveCfg = Release|x64
+		{A7A8B422-F638-423B-A49A-8B2B973A49A7}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {31E5D4CD-0200-4E34-ABB7-CFEEA29377BF}
+	EndGlobalSection
+EndGlobal

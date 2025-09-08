@@ -68,7 +68,7 @@ public:
 		std::function <std::vector<McpContent>(const std::map<std::string, std::string>& args)> callback
 		);
 
-	bool Run(const char* url, ulong session_timeout);
+	bool Run(const char* url, unsigned long long session_timeout);
 
 private:
 	std::string m_server_name;

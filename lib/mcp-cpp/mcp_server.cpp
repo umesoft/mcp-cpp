@@ -17,9 +17,10 @@
 
 #define NOMINMAX
 
+#include "platform/platform.h"
+
 #include "mcp-cpp/mcp_server.h"
 #include "jwt-cpp/jwt.h"
-#include "platform/platform.h"
 
 #include "mongoose.c"
 
@@ -632,7 +633,7 @@ void McpServer::AddTool(
 	m_tools[tool_name] = tool;
 }
 
-bool McpServer::Run(const char* url, ulong session_timeout)
+bool McpServer::Run(const char* url, unsigned long long session_timeout)
 {
 	if (!UpdateUrlPath(url))
 	{
