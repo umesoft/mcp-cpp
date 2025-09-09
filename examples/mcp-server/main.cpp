@@ -16,6 +16,15 @@
  */
 
 #include "mcp-cpp/mcp_server.h"
+
+#define USE_HTTP_TRANSPORT
+
+#ifdef USE_HTTP_TRANSPORT
+#include "mcp-cpp/mcp_http_server_transport.h"
+#else
+#include "mcp-cpp/mcp_stdio_server_transport.h"
+#endif
+
 #include <time.h>
 
 using namespace Mcp;
@@ -24,23 +33,11 @@ int main()
 {
 	McpServer server("MCP Test");
 
-#if 0
-	server.SetTls(
-		"cert.pem",
-		"key.pem"
-	);
-
-	server.SetAuthorization(
-		"\"https://***tenant name***.us.auth0.com\"",
-		"\"***api permission***\""
-	);
-#endif
-
 	server.AddTool(
 		"get_current_time",
-		"指定された場所の現在時刻を取得",
+		"Get the current time at the specified location.",
 		std::vector<McpServer::McpProperty> {
-			{ "location", McpServer::PROPERTY_STRING, "場所", false }
+			{ "location", McpServer::PROPERTY_STRING, "location", false }
 		},
 		std::vector<McpServer::McpProperty> {},
 		[](const std::map<std::string, std::string>& args) -> std::vector<McpServer::McpContent> {
@@ -61,10 +58,30 @@ int main()
 		}
 	);
 
-	server.Run(
+#ifdef USE_HTTP_TRANSPORT
+	McpHttpServerTransport transport;
+
+#if 0
+	transport.SetTls(
+		"cert.pem",
+		"key.pem"
+	);
+
+	transport.SetAuthorization(
+		"\"https://***tenant name***.us.auth0.com\"",
+		"\"***api permission***\""
+	);
+#endif
+
+	transport.SetEntryPoint(
 		"localhost:8000/mcp",
 		10 * 60 * 1000
 	);
+#else
+	McpStdioServerTransport transport;
+#endif
+
+	server.Run(&transport);
 
 	return 0;
 }

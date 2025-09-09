@@ -12,10 +12,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\lib\mcp-cpp\mcp_server.cpp" />
+    <ClCompile Include="..\..\lib\mcp-cpp\mcp_server_transport.cpp" />
     <ClCompile Include="..\..\lib\mcp-cpp\platform\platform_win32.cpp" />
+    <ClCompile Include="..\..\lib\mcp-cpp\mcp_http_server_transport.cpp" />
+    <ClCompile Include="..\..\lib\mcp-cpp\mcp_stdio_server_transport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\mcp-cpp\mcp_server.h" />
+    <ClInclude Include="..\..\include\mcp-cpp\mcp_http_server_transport.h" />
+    <ClInclude Include="..\..\include\mcp-cpp\mcp_server_transport.h" />
+    <ClInclude Include="..\..\include\mcp-cpp\mcp_stdio_server_transport.h" />
     <ClInclude Include="..\..\lib\mcp-cpp\platform\platform.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

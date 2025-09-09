@@ -22,9 +22,11 @@
 #include <string>
 #include <vector>
 
+#include "mcp_server_transport.h"
+
 namespace Mcp {
 
-class McpServer 
+class McpServer : public McpServerTransport::Handler
 {
 public:
 	McpServer(const char* server_name);
@@ -51,15 +53,6 @@ public:
 		std::vector<McpPropertyValue> properties;
 	};
 
-	void SetTls(
-		const char* cert_file,
-		const char* key_file
-	);
-	void SetAuthorization(
-		const char* authorization_servers,
-		const char* scopes_supported
-	);
-
 	void AddTool(
 		const char* tool_name, 
 		const char* tool_description, 
@@ -68,21 +61,16 @@ public:
 		std::function <std::vector<McpContent>(const std::map<std::string, std::string>& args)> callback
 		);
 
-	bool Run(const char* url, unsigned long long session_timeout);
+	bool Run(McpServerTransport* transport);
+
+protected:
+	virtual void OnInitialize(const nlohmann::json& request, nlohmann::json& response);
+	virtual void OnLoggingSetLevel(const nlohmann::json& request, nlohmann::json& response);
+	virtual void OnToolsList(const nlohmann::json& request, nlohmann::json& response);
+	virtual void OnToolCall(const nlohmann::json& request, nlohmann::json& response);
 
 private:
 	std::string m_server_name;
-	bool m_use_tls;
-	std::string m_cert_file;
-	std::string m_key_file;
-	bool m_use_authorization;
-	std::string m_authorization_servers;
-	std::string m_scopes_supported;
-	std::string m_url;
-	std::string m_host;
-	std::string m_entry_point;
-
-	bool UpdateUrlPath(const std::string& url);
 
 	struct McpTool {
 		std::string name;
@@ -93,23 +81,10 @@ private:
 	};
 	std::map<std::string, McpTool> m_tools;
 
+	McpServerTransport* m_transport;
+
 	static std::string GetPropertyType(PropertyType type);
 	static std::string GetPropertyValue(const McpTool& tool, McpPropertyValue type, bool escape);
-
-	std::map<std::string, long> m_sessions;
-
-	bool IsEnableSessionId(std::string session_id);
-	void EraseSession(std::string session_id);
-	void ClearSession();
-
-	void* m_rpc_head;
-
-	static void cbEvHander(void* connection, int event_code, void* event_data);
-	static void cbTimerHandler(void* timer_data);
-	static void cbInitialize(void* rpc_req);
-	static void cbLoggingSetLevel(void* rpc_req);
-	static void cbToolsList(void* rpc_req);
-	static void cbToolsCall(void* rpc_req);
 };
 
 }
