@@ -16,6 +16,7 @@
  */
 
 #include "mcp-cpp/mcp_stdio_server_transport.h"
+#include <uv.h>
 
 namespace Mcp
 {
