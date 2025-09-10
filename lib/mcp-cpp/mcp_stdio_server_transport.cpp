@@ -17,10 +17,6 @@
 
 #include "mcp-cpp/mcp_stdio_server_transport.h"
 
-#include <Windows.h>
-#include <io.h>
-#include <stdio.h>
-
 namespace Mcp
 {
 
@@ -34,17 +30,6 @@ McpStdioServerTransport::~McpStdioServerTransport()
 
 bool McpStdioServerTransport::RecvRequest()
 {
-	char buffer[4096];
-	int bytes_read;
-
-	bytes_read = read(0, buffer, sizeof(buffer) - 1);
-	if (bytes_read <= 0) 
-	{
-		return false;
-	}
-
-	// ...
-
 	return true;
 }
 
