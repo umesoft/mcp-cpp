@@ -62,18 +62,18 @@ int main()
 	McpHttpServerTransport* transport = new McpHttpServerTransport();
 
 #if 0
-	transport.SetTls(
+	transport->SetTls(
 		"cert.pem",
 		"key.pem"
 	);
 
-	transport.SetAuthorization(
+	transport->SetAuthorization(
 		"\"https://***tenant name***.us.auth0.com\"",
 		"\"***api permission***\""
 	);
 #endif
 
-	transport.SetEntryPoint(
+	transport->SetEntryPoint(
 		"localhost:8000/mcp",
 		10 * 60 * 1000
 	);
