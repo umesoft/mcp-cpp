@@ -310,7 +310,7 @@ void McpHttpServerTransport::cbEvHander(void* connection, int event_code, void* 
 					}
 
 					struct mg_rpc* s_rpc_head = (mg_rpc*)self->m_rpc_head;
-					struct mg_iobuf io = { 0, 0, 0, 1024 };
+					struct mg_iobuf io = { 0, 0, 0, 1024 };				// #TODO#
 					struct mg_rpc_req r = {
 						.head = &s_rpc_head,
 						.rpc = nullptr,

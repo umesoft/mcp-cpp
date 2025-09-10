@@ -23,10 +23,24 @@ namespace Mcp {
 
 class McpStdioServerTransport : public McpServerTransport {
 public:
+	static void Initialize();
+	static void Terminate();
+	static McpStdioServerTransport* GetInstance();
+
+protected:
+	virtual void OnOpen();
+	virtual void OnClose();
+
+private:
 	McpStdioServerTransport();
 	virtual ~McpStdioServerTransport();
 
-	virtual bool RecvRequest();
+	static void OnStdinEvent(void* handle, int status, int events);
+
+	static McpStdioServerTransport* m_instance;
+	
+	void* m_loop;
+	void* m_stdin_poll;
 };
 
 }

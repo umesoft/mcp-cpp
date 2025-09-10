@@ -59,7 +59,7 @@ int main()
 	);
 
 #ifdef USE_HTTP_TRANSPORT
-	McpHttpServerTransport transport;
+	McpHttpServerTransport* transport = new McpHttpServerTransport();
 
 #if 0
 	transport.SetTls(
@@ -78,10 +78,17 @@ int main()
 		10 * 60 * 1000
 	);
 #else
-	McpStdioServerTransport transport;
+	McpStdioServerTransport::Initialize();
+	McpStdioServerTransport* transport = McpStdioServerTransport::GetInstance();
 #endif
 
-	server.Run(&transport);
+	server.Run(transport);
+	
+#ifdef USE_HTTP_TRANSPORT
+	delete transport;
+#else
+	McpStdioServerTransport::Terminate();
+#endif
 
 	return 0;
 }
