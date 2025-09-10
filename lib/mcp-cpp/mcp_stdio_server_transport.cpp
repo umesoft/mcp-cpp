@@ -21,15 +21,11 @@
 namespace Mcp
 {
 
-FILE* g_fp = nullptr;
-
 McpStdioServerTransport* McpStdioServerTransport::m_instance = nullptr;
 
 void McpStdioServerTransport::Initialize()
 {
 	m_instance = new McpStdioServerTransport();
-	
-	g_fp = fopen("/tmp/test.txt", "w");
 }
 
 void McpStdioServerTransport::Terminate()
@@ -94,10 +90,6 @@ void McpStdioServerTransport::OnStdinEvent(void* handle, int status, int events)
 	McpStdioServerTransport* self = McpStdioServerTransport::GetInstance();
     uv_loop_t* loop = (uv_loop_t*)self->m_loop;
 
-	fprintf(g_fp, "------------------------\n");
-    fprintf(g_fp, "OnStdinEvent : status = %d, events = %d\n", status, events);
-    fflush(g_fp);
-	
     if (status < 0)
     {
         uv_stop(loop);
@@ -114,12 +106,6 @@ void McpStdioServerTransport::OnStdinEvent(void* handle, int status, int events)
         }
         else 
         {
-            buffer[nread] = '\0';
-            
-			fprintf(g_fp, "------------------------\n");
-            fprintf(g_fp, "req = %s\n", buffer);
-            fflush(g_fp);
-
 			try
 			{
 				auto request = nlohmann::json::parse(buffer, buffer + nread);
@@ -128,28 +114,45 @@ void McpStdioServerTransport::OnStdinEvent(void* handle, int status, int events)
 				{
 					std::string method = request.at("method");
 					
-		            fprintf(g_fp, "method = %s\n", method.c_str());
-		            fflush(g_fp);
-
 					if (method == "initialize")
 					{
 						nlohmann::json response;
 						self->m_handler->OnInitialize(request, response);
 						
-						fprintf(g_fp, "------------------------\n");
-			            fprintf(g_fp, "resp = %s\n", response.dump().c_str());
-			            fflush(g_fp);
+						fprintf(stdout, "%s\n", response.dump().c_str());
+						fflush(stdout);
+					}
+					else if (method == "notifications/initialized")
+					{
+					}
+					else if (method == "logging/setLevel")
+					{
+						nlohmann::json response;
+						self->m_handler->OnLoggingSetLevel(request, response);
 						
-						// printf("%s\n\n", response.dump().c_str());
-						printf("{\"jsonrpc\":\"2.0\",\"id\":0,\"result\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{\"logging\":{},\"tools\":{}},\"serverInfo\":{\"name\":\"MCP Test\",\"version\":\"1.0.0.0\"}}}\n");
-
+						fprintf(stdout, "%s\n", response.dump().c_str());
+						fflush(stdout);
+					}
+					else if (method == "tools/list")
+					{
+						nlohmann::json response;
+						self->m_handler->OnToolsList(request, response);
+						
+						fprintf(stdout, "%s\n", response.dump().c_str());
+						fflush(stdout);
+					}
+					else if (method == "tools/call")
+					{
+						nlohmann::json response;
+						self->m_handler->OnToolCall(request, response);
+						
+						fprintf(stdout, "%s\n", response.dump().c_str());
+						fflush(stdout);
 					}
 				}
 			}
 			catch(const nlohmann::json::parse_error& e)
 			{
-	            fprintf(g_fp, "parse error : %s\n", e.what());
-	            fflush(g_fp);
             }
         }
     }
