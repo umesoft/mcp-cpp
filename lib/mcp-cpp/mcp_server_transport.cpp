@@ -42,4 +42,14 @@ void McpServerTransport::Close()
 	m_handler = nullptr;
 }
 
+bool McpServerTransport::ProcRequest()
+{
+	return OnProcRequest();
+}
+
+void McpServerTransport::SendNotification(const nlohmann::json& notification)
+{
+	OnSendNotification(notification);
+}
+
 }

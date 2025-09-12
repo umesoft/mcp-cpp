@@ -63,7 +63,11 @@ public:
 
 	bool Run(McpServerTransport* transport);
 
+	void SendNotification(const std::string& method, const nlohmann::json& params);
+
 protected:
+	virtual bool OnRecv(const nlohmann::json& request, nlohmann::json& response);
+
 	virtual void OnInitialize(const nlohmann::json& request, nlohmann::json& response);
 	virtual void OnLoggingSetLevel(const nlohmann::json& request, nlohmann::json& response);
 	virtual void OnToolsList(const nlohmann::json& request, nlohmann::json& response);

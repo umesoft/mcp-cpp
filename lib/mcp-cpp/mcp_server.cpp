@@ -61,7 +61,7 @@ bool McpServer::Run(McpServerTransport* transport)
 
 	while (true)
 	{
-		if (!m_transport->RecvRequest())
+		if (!m_transport->ProcRequest())
 		{
 			break;
 		}
@@ -71,6 +71,56 @@ bool McpServer::Run(McpServerTransport* transport)
 	m_transport = nullptr;
 
 	return true;
+}
+
+bool McpServer::OnRecv(const nlohmann::json& request, nlohmann::json& response)
+{
+	if (request.contains("method"))
+	{
+		std::string method = request.at("method");
+		if (method == "notifications/initialized")
+		{
+			return false;
+		}
+
+		if (method == "initialize")
+		{
+			OnInitialize(request, response);
+		}
+		else if (method == "ping")
+		{
+			response = R"(
+				{
+					"jsonrpc": "2.0",
+					"id": 0,
+					"result": {}
+				}
+			)"_json;
+			response["id"] = request.at("id").get<int>();
+		}
+		else if (method == "logging/setLevel")
+		{
+			OnLoggingSetLevel(request, response);
+		}
+		else if (method == "tools/list")
+		{
+			OnToolsList(request, response);
+		}
+		else if (method == "tools/call")
+		{
+			OnToolCall(request, response);
+		}
+		else
+		{
+			// #TODO#
+		}
+
+		response["id"] = request.at("id").get<int>();
+
+		return true;
+	}
+
+	return false;
 }
 
 void McpServer::OnInitialize(const nlohmann::json& request, nlohmann::json& response)
@@ -93,7 +143,6 @@ void McpServer::OnInitialize(const nlohmann::json& request, nlohmann::json& resp
 		}
 	)"_json;
 
-	response["id"] = request.at("id").get<int>();
 	response["result"]["serverInfo"]["name"] = m_server_name;
 }
 
@@ -119,8 +168,6 @@ void McpServer::OnToolsList(const nlohmann::json& request, nlohmann::json& respo
 			"result": {}
 		}
 	)"_json;
-
-	response["id"] = request.at("id").get<int>();
 
 	std::string tools_json = "";
 	for (auto it = m_tools.begin(); it != m_tools.end(); it++)
@@ -249,8 +296,6 @@ void McpServer::OnToolCall(const nlohmann::json& request, nlohmann::json& respon
 		}
 	)"_json;
 
-	response["id"] = request.at("id").get<int>();
-
 	auto raequestArguments = request["params"]["arguments"];
 
 	std::map<std::string, std::string> arguments;
@@ -367,6 +412,24 @@ std::string McpServer::GetPropertyValue(const McpTool& tool, McpPropertyValue va
 	default:
 		return "";
 	}
+}
+
+void McpServer::SendNotification(const std::string& method, const nlohmann::json& params)
+{
+	auto notification = R"(
+		{
+			"jsonrpc": "2.0",
+			"method": "",
+			"params": {
+				"value": 0
+			}
+		}
+	)"_json;
+
+	notification["method"] = "notification/" + method;
+	notification["params"] = params;
+
+	m_transport->SendNotification(notification);
 }
 
 }

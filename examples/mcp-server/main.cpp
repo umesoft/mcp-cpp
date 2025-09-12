@@ -58,6 +58,43 @@ int main()
 		}
 	);
 
+	server.AddTool(
+		"count_down",
+		"Counts down from a specified value.",
+		std::vector<McpServer::McpProperty> {
+			{ "value", McpServer::PROPERTY_STRING, "Start counting down from this value", true }
+	},
+		std::vector<McpServer::McpProperty> {},
+		[&server](const std::map<std::string, std::string>& args) -> std::vector<McpServer::McpContent> {
+			std::vector<McpServer::McpContent> contents;
+
+			std::string start_value_str = args.at("value");
+
+			int start_value = atoi(start_value_str.c_str());
+
+			for (int i = start_value; i > 0; i--)
+			{
+				auto params = R"(
+					{
+						"value": 0
+					}
+				)"_json;
+
+				params["value"] = i;
+
+				server.SendNotification("count_down", params);
+			}
+
+			McpServer::McpContent content{
+				.property_type = McpServer::PROPERTY_TEXT,	
+				.value = "finish!",
+			};
+			contents.push_back(content);
+
+			return contents;
+		}
+	);
+
 #ifdef USE_HTTP_TRANSPORT
 	McpHttpServerTransport* transport = new McpHttpServerTransport();
 

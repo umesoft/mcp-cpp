@@ -34,13 +34,15 @@ public:
 
 protected:
 	virtual void OnOpen();
-	virtual bool RecvRequest();
+	virtual bool OnProcRequest();
+	virtual void OnSendNotification(const nlohmann::json& notification);
 
 private:
 	std::queue<std::string> m_queue;
 	std::mutex m_mutex;
 	std::condition_variable m_cv;
 	std::thread m_worker;
+	char* m_buffer;
 };
 
 }

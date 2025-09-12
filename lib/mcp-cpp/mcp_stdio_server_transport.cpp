@@ -21,92 +21,81 @@
 namespace Mcp
 {
 
-	McpStdioServerTransport::McpStdioServerTransport()
-	{
-	}
+const int buffer_size = 128 * 1024;
 
-	McpStdioServerTransport::~McpStdioServerTransport()
-	{
-	}
+McpStdioServerTransport::McpStdioServerTransport()
+{
+	m_buffer = new char[buffer_size];
+}
 
-	void McpStdioServerTransport::OnOpen()
+McpStdioServerTransport::~McpStdioServerTransport()
+{
+	delete[] m_buffer;
+}
+
+void McpStdioServerTransport::OnOpen()
+{
+	m_worker = std::thread([this]
 	{
-		m_worker = std::thread([this]
+		while (1)
 		{
-			while (1)
+			if (fgets(m_buffer, buffer_size, stdin) == nullptr)
 			{
-				char buffer[4096];			// #TODO# 
-				if (fgets(buffer, sizeof(buffer) - 1, stdin) == nullptr)
-				{
-					break;
-				}
+				break;
+			}
 
+			int pos = strlen(m_buffer);
+			if (m_buffer[pos - 1] == '\n')
+			{
 				{
 					std::lock_guard<std::mutex> lock(m_mutex);
-					m_queue.push(buffer);
+					m_queue.push(m_buffer);
 				}
-
 				m_cv.notify_one();
 			}
-		});
-	}
+		}
+	});
+}
 
-	bool McpStdioServerTransport::RecvRequest()
+bool McpStdioServerTransport::OnProcRequest()
+{
+	std::unique_lock<std::mutex> lock(m_mutex);
+	if (m_cv.wait_for(lock, std::chrono::milliseconds(100)) == std::cv_status::timeout) 
 	{
-		std::unique_lock<std::mutex> lock(m_mutex);
-		if (m_cv.wait_for(lock, std::chrono::milliseconds(100)) == std::cv_status::timeout) 
-		{
-			return true;
-		}
-
-		while (!m_queue.empty())
-		{
-			const std::string& request_str = m_queue.front();
-
-			try
-			{
-				auto request = nlohmann::json::parse(request_str);
-				if (request.contains("method"))
-				{
-					std::string method = request.at("method");
-					if (method != "notifications/initialized")
-					{
-						nlohmann::json response;
-
-						if (method == "initialize")
-						{
-							m_handler->OnInitialize(request, response);
-						}
-						else if (method == "logging/setLevel")
-						{
-							m_handler->OnLoggingSetLevel(request, response);
-						}
-						else if (method == "tools/list")
-						{
-							m_handler->OnToolsList(request, response);
-						}
-						else if (method == "tools/call")
-						{
-							m_handler->OnToolCall(request, response);
-						}
-						else
-						{
-							// #TODO#
-						}
-
-						fprintf(stdout, "%s\n", response.dump().c_str());
-						fflush(stdout);
-					}
-				}
-			}
-			catch (const nlohmann::json::parse_error& e)
-			{
-				// #TODO#
-			}
-
-			m_queue.pop();
-		}
-
 		return true;
 	}
+
+	while (!m_queue.empty())
+	{
+		const std::string& request_str = m_queue.front();
+
+		try
+		{
+			auto request = nlohmann::json::parse(request_str);
+
+			nlohmann::json response;
+			if (m_handler->OnRecv(request, response))
+			{
+				fprintf(stdout, "%s\n", response.dump().c_str());
+				fflush(stdout);
+			}
+		}
+		catch (const nlohmann::json::parse_error& e)
+		{
+			fprintf(stderr, "Error: Invalid message\n");
+			fflush(stderr);
+		}
+
+		m_queue.pop();
+	}
+
+	return true;
+}
+
+void McpStdioServerTransport::OnSendNotification(const nlohmann::json& notification)
+{
+	fprintf(stdout, "%s\n", notification.dump().c_str());
+	fflush(stdout);
+}
+
 }
