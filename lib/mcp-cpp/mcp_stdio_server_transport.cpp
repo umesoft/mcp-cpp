@@ -66,42 +66,33 @@ namespace Mcp
 			try
 			{
 				auto request = nlohmann::json::parse(request_str);
-
 				if (request.contains("method"))
 				{
 					std::string method = request.at("method");
-
-					if (method == "initialize")
+					if (method != "notifications/initialized")
 					{
 						nlohmann::json response;
-						m_handler->OnInitialize(request, response);
 
-						fprintf(stdout, "%s\n", response.dump().c_str());
-						fflush(stdout);
-					}
-					else if (method == "notifications/initialized")
-					{
-					}
-					else if (method == "logging/setLevel")
-					{
-						nlohmann::json response;
-						m_handler->OnLoggingSetLevel(request, response);
-
-						fprintf(stdout, "%s\n", response.dump().c_str());
-						fflush(stdout);
-					}
-					else if (method == "tools/list")
-					{
-						nlohmann::json response;
-						m_handler->OnToolsList(request, response);
-
-						fprintf(stdout, "%s\n", response.dump().c_str());
-						fflush(stdout);
-					}
-					else if (method == "tools/call")
-					{
-						nlohmann::json response;
-						m_handler->OnToolCall(request, response);
+						if (method == "initialize")
+						{
+							m_handler->OnInitialize(request, response);
+						}
+						else if (method == "logging/setLevel")
+						{
+							m_handler->OnLoggingSetLevel(request, response);
+						}
+						else if (method == "tools/list")
+						{
+							m_handler->OnToolsList(request, response);
+						}
+						else if (method == "tools/call")
+						{
+							m_handler->OnToolCall(request, response);
+						}
+						else
+						{
+							// #TODO#
+						}
 
 						fprintf(stdout, "%s\n", response.dump().c_str());
 						fflush(stdout);
@@ -110,6 +101,7 @@ namespace Mcp
 			}
 			catch (const nlohmann::json::parse_error& e)
 			{
+				// #TODO#
 			}
 
 			m_queue.pop();
