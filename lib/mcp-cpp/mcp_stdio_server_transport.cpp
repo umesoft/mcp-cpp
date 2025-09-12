@@ -16,7 +16,7 @@
  */
 
 #include "mcp-cpp/mcp_stdio_server_transport.h"
-#include <uv.h>
+#include <stdio.h>
 
 namespace Mcp
 {
@@ -40,8 +40,8 @@ McpStdioServerTransport* McpStdioServerTransport::GetInstance()
 }
 
 McpStdioServerTransport::McpStdioServerTransport()
-	: m_loop(nullptr)
-	, m_stdin_poll(nullptr)
+	: m_worker()
+	, m_is_finish(false)
 {
 }
 
@@ -51,111 +51,86 @@ McpStdioServerTransport::~McpStdioServerTransport()
 
 void McpStdioServerTransport::OnOpen()
 {
-    uv_loop_t* loop = uv_default_loop();
-    m_loop = loop;
-    
-    uv_poll_t* stdin_poll = new uv_poll_t();
-    m_stdin_poll = stdin_poll;
+	m_is_finish = false;
 
-    uv_poll_init(loop, stdin_poll, STDIN_FILENO);
-
-    uv_poll_start(stdin_poll, UV_READABLE, (uv_poll_cb)McpStdioServerTransport::OnStdinEvent);
-    
-    uv_poll_init(loop, stdin_poll, STDIN_FILENO);
-
-    uv_run(loop, UV_RUN_DEFAULT);
+	m_worker = std::make_unique<std::thread>(&McpStdioServerTransport::InputLoop, this);
 }
 
 void McpStdioServerTransport::OnClose()
 {
-    if (m_stdin_poll != nullptr)
-    {
-	    uv_poll_t* stdin_poll = (uv_poll_t*)m_stdin_poll;
-		
-		uv_poll_stop(stdin_poll);
-		uv_close((uv_handle_t*)stdin_poll, NULL);
-		m_stdin_poll = nullptr;
-	}
-	
-	if (m_loop != nullptr)
+	if (m_worker && m_worker->joinable()) 
 	{
-	    uv_loop_t* loop = (uv_loop_t*)m_loop;
-	    uv_loop_close(loop);
-	    m_loop = nullptr;
+		m_worker->join();
 	}
 }
 
-void McpStdioServerTransport::OnStdinEvent(void* handle, int status, int events)
+bool McpStdioServerTransport::RecvRequest()
 {
-	McpStdioServerTransport* self = McpStdioServerTransport::GetInstance();
-    uv_loop_t* loop = (uv_loop_t*)self->m_loop;
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    if (status < 0)
-    {
-        uv_stop(loop);
-        return;
-    }
+	return !m_is_finish;
+}
 
-    if (events & UV_READABLE)
-    {
-        char buffer[4096];			// #TODO# 
-        ssize_t nread = read(STDIN_FILENO, buffer, sizeof(buffer) - 1);
-        if (nread <= 0) 
-        {
-            uv_stop(loop);
-        }
-        else 
-        {
-			try
+void McpStdioServerTransport::InputLoop()
+{
+	while (1)
+	{
+		char buffer[4096];			// #TODO# 
+		if (fgets(buffer, sizeof(buffer) - 1, stdin) == nullptr)
+		{
+			m_is_finish = true;
+			break;
+		}
+
+		try
+		{
+			auto request = nlohmann::json::parse(buffer);
+
+			if (request.contains("method"))
 			{
-				auto request = nlohmann::json::parse(buffer, buffer + nread);
-				
-				if (request.contains("method"))
+				std::string method = request.at("method");
+
+				if (method == "initialize")
 				{
-					std::string method = request.at("method");
-					
-					if (method == "initialize")
-					{
-						nlohmann::json response;
-						self->m_handler->OnInitialize(request, response);
-						
-						fprintf(stdout, "%s\n", response.dump().c_str());
-						fflush(stdout);
-					}
-					else if (method == "notifications/initialized")
-					{
-					}
-					else if (method == "logging/setLevel")
-					{
-						nlohmann::json response;
-						self->m_handler->OnLoggingSetLevel(request, response);
-						
-						fprintf(stdout, "%s\n", response.dump().c_str());
-						fflush(stdout);
-					}
-					else if (method == "tools/list")
-					{
-						nlohmann::json response;
-						self->m_handler->OnToolsList(request, response);
-						
-						fprintf(stdout, "%s\n", response.dump().c_str());
-						fflush(stdout);
-					}
-					else if (method == "tools/call")
-					{
-						nlohmann::json response;
-						self->m_handler->OnToolCall(request, response);
-						
-						fprintf(stdout, "%s\n", response.dump().c_str());
-						fflush(stdout);
-					}
+					nlohmann::json response;
+					m_handler->OnInitialize(request, response);
+
+					fprintf(stdout, "%s\n", response.dump().c_str());
+					fflush(stdout);
+				}
+				else if (method == "notifications/initialized")
+				{
+				}
+				else if (method == "logging/setLevel")
+				{
+					nlohmann::json response;
+					m_handler->OnLoggingSetLevel(request, response);
+
+					fprintf(stdout, "%s\n", response.dump().c_str());
+					fflush(stdout);
+				}
+				else if (method == "tools/list")
+				{
+					nlohmann::json response;
+					m_handler->OnToolsList(request, response);
+
+					fprintf(stdout, "%s\n", response.dump().c_str());
+					fflush(stdout);
+				}
+				else if (method == "tools/call")
+				{
+					nlohmann::json response;
+					m_handler->OnToolCall(request, response);
+
+					fprintf(stdout, "%s\n", response.dump().c_str());
+					fflush(stdout);
 				}
 			}
-			catch(const nlohmann::json::parse_error& e)
-			{
-            }
-        }
-    }
+		}
+		catch (const nlohmann::json::parse_error& e)
+		{
+		}
+	}
 }
 
 }

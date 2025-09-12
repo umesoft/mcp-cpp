@@ -19,6 +19,8 @@
 
 #include "mcp_server_transport.h"
 
+#include <thread>
+
 namespace Mcp {
 
 class McpStdioServerTransport : public McpServerTransport {
@@ -30,17 +32,18 @@ public:
 protected:
 	virtual void OnOpen();
 	virtual void OnClose();
+	virtual bool RecvRequest();
 
 private:
 	McpStdioServerTransport();
 	virtual ~McpStdioServerTransport();
 
-	static void OnStdinEvent(void* handle, int status, int events);
+	void InputLoop();
 
 	static McpStdioServerTransport* m_instance;
 	
-	void* m_loop;
-	void* m_stdin_poll;
+	std::unique_ptr<std::thread> m_worker;
+	bool m_is_finish;
 };
 
 }

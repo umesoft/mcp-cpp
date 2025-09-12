@@ -61,7 +61,10 @@ bool McpServer::Run(McpServerTransport* transport)
 
 	while (true)
 	{
-		m_transport->RecvRequest();
+		if (!m_transport->RecvRequest())
+		{
+			break;
+		}
 	}
 
 	m_transport->Close();

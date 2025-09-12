@@ -40,7 +40,7 @@ public:
 	void Open(Handler* handler);
 	void Close();
 
-	virtual bool RecvRequest() { return true;};
+	virtual bool RecvRequest() = 0;
 
 protected:
 	Handler* m_handler;
