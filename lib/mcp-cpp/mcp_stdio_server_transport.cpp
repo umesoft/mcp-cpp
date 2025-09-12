@@ -21,11 +21,11 @@
 namespace Mcp
 {
 
-const int buffer_size = 128 * 1024;
+const int max_request_size = 128 * 1024;
 
 McpStdioServerTransport::McpStdioServerTransport()
 {
-	m_buffer = new char[buffer_size];
+	m_buffer = new char[max_request_size];
 }
 
 McpStdioServerTransport::~McpStdioServerTransport()
@@ -39,7 +39,7 @@ void McpStdioServerTransport::OnOpen()
 	{
 		while (1)
 		{
-			if (fgets(m_buffer, buffer_size, stdin) == nullptr)
+			if (fgets(m_buffer, max_request_size, stdin) == nullptr)
 			{
 				break;
 			}
