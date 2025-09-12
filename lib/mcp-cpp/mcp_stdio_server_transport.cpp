@@ -21,116 +21,100 @@
 namespace Mcp
 {
 
-McpStdioServerTransport* McpStdioServerTransport::m_instance = nullptr;
-
-void McpStdioServerTransport::Initialize()
-{
-	m_instance = new McpStdioServerTransport();
-}
-
-void McpStdioServerTransport::Terminate()
-{
-	delete m_instance;
-	m_instance = nullptr;
-}
-
-McpStdioServerTransport* McpStdioServerTransport::GetInstance()
-{
-	return m_instance;
-}
-
-McpStdioServerTransport::McpStdioServerTransport()
-	: m_worker()
-	, m_is_finish(false)
-{
-}
-
-McpStdioServerTransport::~McpStdioServerTransport()
-{
-}
-
-void McpStdioServerTransport::OnOpen()
-{
-	m_is_finish = false;
-
-	m_worker = std::make_unique<std::thread>(&McpStdioServerTransport::InputLoop, this);
-}
-
-void McpStdioServerTransport::OnClose()
-{
-	if (m_worker && m_worker->joinable()) 
+	McpStdioServerTransport::McpStdioServerTransport()
 	{
-		m_worker->join();
 	}
-}
 
-bool McpStdioServerTransport::RecvRequest()
-{
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-	return !m_is_finish;
-}
-
-void McpStdioServerTransport::InputLoop()
-{
-	while (1)
+	McpStdioServerTransport::~McpStdioServerTransport()
 	{
-		char buffer[4096];			// #TODO# 
-		if (fgets(buffer, sizeof(buffer) - 1, stdin) == nullptr)
+	}
+
+	void McpStdioServerTransport::OnOpen()
+	{
+		m_worker = std::thread([this]
 		{
-			m_is_finish = true;
-			break;
+			while (1)
+			{
+				char buffer[4096];			// #TODO# 
+				if (fgets(buffer, sizeof(buffer) - 1, stdin) == nullptr)
+				{
+					break;
+				}
+
+				{
+					std::lock_guard<std::mutex> lock(m_mutex);
+					m_queue.push(buffer);
+				}
+
+				m_cv.notify_one();
+			}
+		});
+	}
+
+	bool McpStdioServerTransport::RecvRequest()
+	{
+		std::unique_lock<std::mutex> lock(m_mutex);
+		if (m_cv.wait_for(lock, std::chrono::milliseconds(100)) == std::cv_status::timeout) 
+		{
+			return true;
 		}
 
-		try
+		while (!m_queue.empty())
 		{
-			auto request = nlohmann::json::parse(buffer);
+			const std::string& request_str = m_queue.front();
 
-			if (request.contains("method"))
+			try
 			{
-				std::string method = request.at("method");
+				auto request = nlohmann::json::parse(request_str);
 
-				if (method == "initialize")
+				if (request.contains("method"))
 				{
-					nlohmann::json response;
-					m_handler->OnInitialize(request, response);
+					std::string method = request.at("method");
 
-					fprintf(stdout, "%s\n", response.dump().c_str());
-					fflush(stdout);
-				}
-				else if (method == "notifications/initialized")
-				{
-				}
-				else if (method == "logging/setLevel")
-				{
-					nlohmann::json response;
-					m_handler->OnLoggingSetLevel(request, response);
+					if (method == "initialize")
+					{
+						nlohmann::json response;
+						m_handler->OnInitialize(request, response);
 
-					fprintf(stdout, "%s\n", response.dump().c_str());
-					fflush(stdout);
-				}
-				else if (method == "tools/list")
-				{
-					nlohmann::json response;
-					m_handler->OnToolsList(request, response);
+						fprintf(stdout, "%s\n", response.dump().c_str());
+						fflush(stdout);
+					}
+					else if (method == "notifications/initialized")
+					{
+					}
+					else if (method == "logging/setLevel")
+					{
+						nlohmann::json response;
+						m_handler->OnLoggingSetLevel(request, response);
 
-					fprintf(stdout, "%s\n", response.dump().c_str());
-					fflush(stdout);
-				}
-				else if (method == "tools/call")
-				{
-					nlohmann::json response;
-					m_handler->OnToolCall(request, response);
+						fprintf(stdout, "%s\n", response.dump().c_str());
+						fflush(stdout);
+					}
+					else if (method == "tools/list")
+					{
+						nlohmann::json response;
+						m_handler->OnToolsList(request, response);
 
-					fprintf(stdout, "%s\n", response.dump().c_str());
-					fflush(stdout);
+						fprintf(stdout, "%s\n", response.dump().c_str());
+						fflush(stdout);
+					}
+					else if (method == "tools/call")
+					{
+						nlohmann::json response;
+						m_handler->OnToolCall(request, response);
+
+						fprintf(stdout, "%s\n", response.dump().c_str());
+						fflush(stdout);
+					}
 				}
 			}
-		}
-		catch (const nlohmann::json::parse_error& e)
-		{
-		}
-	}
-}
+			catch (const nlohmann::json::parse_error& e)
+			{
+			}
 
+			m_queue.pop();
+		}
+
+		return true;
+	}
 }

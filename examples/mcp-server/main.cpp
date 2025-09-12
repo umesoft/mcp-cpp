@@ -78,17 +78,12 @@ int main()
 		10 * 60 * 1000
 	);
 #else
-	McpStdioServerTransport::Initialize();
-	McpStdioServerTransport* transport = McpStdioServerTransport::GetInstance();
+	McpStdioServerTransport* transport = new McpStdioServerTransport();
 #endif
 
 	server.Run(transport);
 	
-#ifdef USE_HTTP_TRANSPORT
 	delete transport;
-#else
-	McpStdioServerTransport::Terminate();
-#endif
 
 	return 0;
 }

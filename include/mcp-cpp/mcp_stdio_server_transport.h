@@ -19,31 +19,28 @@
 
 #include "mcp_server_transport.h"
 
+#include <condition_variable>
+#include <mutex>
+#include <queue>
+#include <string>
 #include <thread>
 
 namespace Mcp {
 
 class McpStdioServerTransport : public McpServerTransport {
 public:
-	static void Initialize();
-	static void Terminate();
-	static McpStdioServerTransport* GetInstance();
-
-protected:
-	virtual void OnOpen();
-	virtual void OnClose();
-	virtual bool RecvRequest();
-
-private:
 	McpStdioServerTransport();
 	virtual ~McpStdioServerTransport();
 
-	void InputLoop();
+protected:
+	virtual void OnOpen();
+	virtual bool RecvRequest();
 
-	static McpStdioServerTransport* m_instance;
-	
-	std::unique_ptr<std::thread> m_worker;
-	bool m_is_finish;
+private:
+	std::queue<std::string> m_queue;
+	std::mutex m_mutex;
+	std::condition_variable m_cv;
+	std::thread m_worker;
 };
 
 }
