@@ -27,7 +27,7 @@ public:
 	public:
 		virtual ~Handler() {}
 
-		virtual bool OnRecv(const nlohmann::json& request, nlohmann::json& response) = 0;
+		virtual bool OnRecv(const std::string& request_str, std::string& response_str) = 0;
 
 		virtual void OnInitialize(const nlohmann::json& request, nlohmann::json& response) = 0;
 		virtual void OnLoggingSetLevel(const nlohmann::json& request, nlohmann::json& response) = 0;
@@ -43,7 +43,7 @@ public:
 	void Close();
 
 	bool ProcRequest();
-	void SendNotification(const nlohmann::json& notification);
+	void SendNotification(const std::string& notification_str);
 
 protected:
 	Handler* m_handler;
@@ -51,7 +51,7 @@ protected:
 	virtual void OnOpen() {};
 	virtual void OnClose() {};
 	virtual bool OnProcRequest() { return true; };
-	virtual void OnSendNotification(const nlohmann::json& notification) {};
+	virtual void OnSendNotification(const std::string& notification_str) {};
 };
 
 }

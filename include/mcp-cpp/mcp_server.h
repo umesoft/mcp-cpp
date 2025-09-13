@@ -66,7 +66,7 @@ public:
 	void SendNotification(const std::string& method, const nlohmann::json& params);
 
 protected:
-	virtual bool OnRecv(const nlohmann::json& request, nlohmann::json& response);
+	virtual bool OnRecv(const std::string& request_str, std::string& response_str);
 
 	virtual void OnInitialize(const nlohmann::json& request, nlohmann::json& response);
 	virtual void OnLoggingSetLevel(const nlohmann::json& request, nlohmann::json& response);

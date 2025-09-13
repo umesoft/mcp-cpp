@@ -35,7 +35,7 @@ public:
 protected:
 	virtual void OnOpen();
 	virtual bool OnProcRequest();
-	virtual void OnSendNotification(const nlohmann::json& notification);
+	virtual void OnSendNotification(const std::string& notification_str);
 
 private:
 	std::queue<std::string> m_queue;

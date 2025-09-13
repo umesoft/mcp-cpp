@@ -68,24 +68,12 @@ bool McpStdioServerTransport::OnProcRequest()
 	while (!m_queue.empty())
 	{
 		const std::string& request_str = m_queue.front();
-
-		try
-		{
-			auto request = nlohmann::json::parse(request_str);
-
-			nlohmann::json response;
-			if (m_handler->OnRecv(request, response))
-			{
-				std::lock_guard<std::mutex> lock(m_send_mutex);
-				fprintf(stdout, "%s\n", response.dump().c_str());
-				fflush(stdout);
-			}
-		}
-		catch (const nlohmann::json::parse_error& e)
+		std::string response_str;
+		if (m_handler->OnRecv(request_str, response_str))
 		{
 			std::lock_guard<std::mutex> lock(m_send_mutex);
-			fprintf(stderr, "Error: Invalid message\n");
-			fflush(stderr);
+			fprintf(stdout, "%s\n", response_str.c_str());
+			fflush(stdout);
 		}
 
 		m_queue.pop();
@@ -94,10 +82,10 @@ bool McpStdioServerTransport::OnProcRequest()
 	return true;
 }
 
-void McpStdioServerTransport::OnSendNotification(const nlohmann::json& notification)
+void McpStdioServerTransport::OnSendNotification(const std::string& notification_str)
 {
 	std::lock_guard<std::mutex> lock(m_send_mutex);
-	fprintf(stdout, "%s\n", notification.dump().c_str());
+	fprintf(stdout, "%s\n", notification_str.c_str());
 	fflush(stdout);
 }
 

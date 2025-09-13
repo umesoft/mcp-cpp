@@ -73,54 +73,98 @@ bool McpServer::Run(McpServerTransport* transport)
 	return true;
 }
 
-bool McpServer::OnRecv(const nlohmann::json& request, nlohmann::json& response)
+bool McpServer::OnRecv(const std::string& request_str, std::string& response_str)
 {
-	if (request.contains("method"))
-	{
-		std::string method = request.at("method");
-		if (method == "notifications/initialized")
-		{
-			return false;
-		}
+	nlohmann::json response;
 
-		if (method == "initialize")
+	try
+	{
+		auto request = nlohmann::json::parse(request_str);
+
+		if (request.contains("method"))
 		{
-			OnInitialize(request, response);
+			std::string method = request.at("method");
+			if (method == "notifications/initialized")
+			{
+				return false;
+			}
+
+			if (method == "initialize")
+			{
+				OnInitialize(request, response);
+			}
+			else if (method == "ping")
+			{
+				response = R"(
+					{
+						"jsonrpc": "2.0",
+						"id": null,
+						"result": {}
+					}
+				)"_json;
+			}
+			else if (method == "logging/setLevel")
+			{
+				OnLoggingSetLevel(request, response);
+			}
+			else if (method == "tools/list")
+			{
+				OnToolsList(request, response);
+			}
+			else if (method == "tools/call")
+			{
+				OnToolCall(request, response);
+			}
+			else
+			{
+				response = R"(
+					{
+						"jsonrpc": "2.0",
+						"id": null,
+						"error": {
+							"code": -32601,
+							"message": "Method not found"
+						}
+					}
+				)"_json;
+			}
 		}
-		else if (method == "ping")
+		else
 		{
 			response = R"(
 				{
 					"jsonrpc": "2.0",
-					"id": 0,
-					"result": {}
+					"id": null,
+					"error": {
+						"code": -32600,
+						"message": "Invalid request"
+					}
 				}
 			)"_json;
+		}
+
+		if (request.contains("id"))
+		{
 			response["id"] = request.at("id").get<int>();
 		}
-		else if (method == "logging/setLevel")
-		{
-			OnLoggingSetLevel(request, response);
-		}
-		else if (method == "tools/list")
-		{
-			OnToolsList(request, response);
-		}
-		else if (method == "tools/call")
-		{
-			OnToolCall(request, response);
-		}
-		else
-		{
-			// #TODO#
-		}
-
-		response["id"] = request.at("id").get<int>();
-
-		return true;
+	}
+	catch (const nlohmann::json::parse_error& e)
+	{
+		response = R"(
+			{
+				"jsonrpc": "2.0",
+				"id": null,
+				"error": {
+					"code": -32700,
+					"message": "Parse error"
+				}
+			}
+		)"_json;
 	}
 
-	return false;
+	response_str = response.dump();
+
+	return true;
 }
 
 void McpServer::OnInitialize(const nlohmann::json& request, nlohmann::json& response)
@@ -284,7 +328,16 @@ void McpServer::OnToolCall(const nlohmann::json& request, nlohmann::json& respon
 	auto it = m_tools.find(name);
 	if (it == m_tools.end())
 	{
-		// mg_json_rpc2_err(r, -32602, "Unknown tool: invalid_tool_name");
+		response = R"(
+			{
+				"jsonrpc": "2.0",
+				"id": 0,
+				"error": {
+					"code": -32602,
+					"message": "Unknown tool: invalid_tool_name"
+				}
+			}
+		)"_json;
 		return;
 	}
 
@@ -429,7 +482,7 @@ void McpServer::SendNotification(const std::string& method, const nlohmann::json
 	notification["method"] = "notification/" + method;
 	notification["params"] = params;
 
-	m_transport->SendNotification(notification);
+	m_transport->SendNotification(notification.dump());
 }
 
 }

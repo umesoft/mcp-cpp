@@ -47,9 +47,9 @@ bool McpServerTransport::ProcRequest()
 	return OnProcRequest();
 }
 
-void McpServerTransport::SendNotification(const nlohmann::json& notification)
+void McpServerTransport::SendNotification(const std::string& notification_str)
 {
-	OnSendNotification(notification);
+	OnSendNotification(notification_str);
 }
 
 }
