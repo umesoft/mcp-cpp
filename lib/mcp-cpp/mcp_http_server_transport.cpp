@@ -196,12 +196,10 @@ void McpHttpServerTransport::cbEvHander(void* connection, int event_code, void* 
 			{
 				mg_http_reply(conn, 200, "", "");
 				self->EraseSession(session_id);
-				return;
 			}
 			else if (mg_strcasecmp(hm->method, mg_str("GET")) == 0)
 			{
 				mg_http_reply(conn, 405, "", "");
-				return;
 			}
 			else if (mg_strcasecmp(hm->method, mg_str("POST")) == 0)
 			{
@@ -271,13 +269,11 @@ void McpHttpServerTransport::cbEvHander(void* connection, int event_code, void* 
 					{
 						std::string headers = "mcp-session-id: " + session_id + "\r\n";
 						mg_http_reply(conn, 202, headers.c_str(), "");
-						return;
 					}
 				}
 				else
 				{
 					mg_http_reply(conn, 405, "", "");
-					return;
 				}
 			}
 		}
@@ -312,12 +308,10 @@ void McpHttpServerTransport::cbEvHander(void* connection, int event_code, void* 
 					""
 				);
 			}
-			return;
 		}
 		else
 		{
 			mg_http_reply(conn, 405, "", "");
-			return;
 		}
 	}
 }
