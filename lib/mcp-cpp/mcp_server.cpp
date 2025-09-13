@@ -84,7 +84,8 @@ bool McpServer::OnRecv(const std::string& request_str, std::string& response_str
 		if (request.contains("method"))
 		{
 			std::string method = request.at("method");
-			if (method == "notifications/initialized")
+			if (method == "notifications/initialized" ||
+				method == "notifications/cancelled")
 			{
 				return false;
 			}

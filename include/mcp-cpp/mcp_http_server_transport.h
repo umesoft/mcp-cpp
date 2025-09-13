@@ -67,14 +67,9 @@ private:
 
 	void* m_mgr;
 	void* m_timer;
-	void* m_rpc_head;
 
 	static void cbEvHander(void* connection, int event_code, void* event_data);
 	static void cbTimerHandler(void* timer_data);
-	static void cbInitialize(void* rpc_req);
-	static void cbLoggingSetLevel(void* rpc_req);
-	static void cbToolsList(void* rpc_req);
-	static void cbToolsCall(void* rpc_req);
 };
 
 }

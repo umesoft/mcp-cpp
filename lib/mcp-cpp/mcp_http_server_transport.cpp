@@ -26,29 +26,6 @@
 namespace Mcp {
 
 typedef void (*mg_timer_handler_t)(void*);
-typedef void (*mg_rpc_handler_t)(mg_rpc_req*);
-
-/*
-void mg_json_rpc2_verr(mg_rpc_req* r, int code, const char* fmt, va_list* ap) {
-	int len, off = mg_json_get(r->frame, "$.id", &len);
-	mg_xprintf(r->pfn, r->pfn_data, "event: message\ndata: {\"jsonrpc\":\"2.0\",");
-	if (off > 0) {
-		mg_xprintf(r->pfn, r->pfn_data, "%m:%.*s,", mg_print_esc, 0, "id", len,
-			&r->frame.buf[off]);
-	}
-	mg_xprintf(r->pfn, r->pfn_data, "%m:{%m:%d,%m:", mg_print_esc, 0, "error",
-		mg_print_esc, 0, "code", code, mg_print_esc, 0, "message");
-	mg_vxprintf(r->pfn, r->pfn_data, fmt == NULL ? "null" : fmt, ap);
-	mg_xprintf(r->pfn, r->pfn_data, "}}\n\n");
-}
-
-static void mg_json_rpc2_err(mg_rpc_req* r, int code, const char* fmt, ...) {
-	va_list ap;
-	va_start(ap, fmt);
-	mg_json_rpc2_verr(r, code, fmt, &ap);
-	va_end(ap);
-}
-*/
 
 McpHttpServerTransport::McpHttpServerTransport()
 	: m_use_tls(false)
@@ -63,7 +40,6 @@ McpHttpServerTransport::McpHttpServerTransport()
 	, m_sessions()
 	, m_mgr(nullptr)
 	, m_timer(nullptr)
-	, m_rpc_head(nullptr)
 {
 }
 
@@ -133,8 +109,6 @@ void McpHttpServerTransport::SetEntryPoint(const std::string& url, unsigned long
 
 void McpHttpServerTransport::OnOpen()
 {
-	mg_rpc* s_rpc_head = nullptr;
-
 	mg_mgr* s_mgr = nullptr;
 	s_mgr = new mg_mgr();
 	mg_mgr_init(s_mgr);
@@ -143,14 +117,8 @@ void McpHttpServerTransport::OnOpen()
 	s_timer = new mg_timer();
 	mg_timer_init(&s_mgr->timers, s_timer, m_session_timeout, MG_TIMER_REPEAT, (mg_timer_handler_t)McpHttpServerTransport::cbTimerHandler, this);
 
-	mg_rpc_add(&s_rpc_head, mg_str("initialize"), (mg_rpc_handler_t)McpHttpServerTransport::cbInitialize, this);
-	mg_rpc_add(&s_rpc_head, mg_str("logging/setLevel"), (mg_rpc_handler_t)McpHttpServerTransport::cbLoggingSetLevel, this);
-	mg_rpc_add(&s_rpc_head, mg_str("tools/list"), (mg_rpc_handler_t)McpHttpServerTransport::cbToolsList, this);
-	mg_rpc_add(&s_rpc_head, mg_str("tools/call"), (mg_rpc_handler_t)McpHttpServerTransport::cbToolsCall, this);
-
 	m_mgr = s_mgr;
 	m_timer = s_timer;
-	m_rpc_head = s_rpc_head;
 
 	mg_http_listen(
 		s_mgr,
@@ -164,10 +132,6 @@ void McpHttpServerTransport::OnClose()
 {
 	mg_mgr* s_mgr = (mg_mgr*)m_mgr;
 	mg_timer* s_timer = (mg_timer*)m_timer;
-	mg_rpc* s_rpc_head = (mg_rpc*)m_rpc_head;
-
-	mg_rpc_del(&s_rpc_head, NULL);
-	m_rpc_head = nullptr;
 
 	mg_timer_free(&s_mgr->timers, s_timer);
 	m_timer = nullptr;
@@ -296,40 +260,19 @@ void McpHttpServerTransport::cbEvHander(void* connection, int event_code, void* 
 					}
 					self->m_sessions[session_id] = 1;
 
-					if (strcmp(method, "notifications/initialized") == 0)
-					{
-						std::string headers = "mcp-session-id: " + session_id + "\r\n";
-						mg_http_reply(conn, 202, headers.c_str(), "");
-						return;
-					}
-					else if (strcmp(method, "notifications/cancelled") == 0)
-					{
-						std::string headers = "mcp-session-id: " + session_id + "\r\n";
-						mg_http_reply(conn, 202, headers.c_str(), "");
-						return;
-					}
-
-					struct mg_rpc* s_rpc_head = (mg_rpc*)self->m_rpc_head;
-					struct mg_iobuf io = { 0, 0, 0, 1024 };				// #TODO#
-					struct mg_rpc_req r = {
-						.head = &s_rpc_head,
-						.rpc = nullptr,
-						.pfn = mg_pfn_iobuf,
-						.pfn_data = &io,
-						.req_data = nullptr,
-						.frame = hm->body,
-					};
-					mg_rpc_process(&r);
-					if (io.buf != NULL)
+					std::string request_str = std::string(hm->body.buf, hm->body.buf + hm->body.len);
+					std::string response_str;
+					if (self->m_handler->OnRecv(request_str, response_str))
 					{
 						std::string headers = "Content-Type: text/event-stream\r\nmcp-session-id: " + session_id + "\r\n";
-						mg_http_reply(conn, 200, headers.c_str(), (char*)io.buf);
+						mg_http_reply(conn, 200, headers.c_str(), "event: message\ndata: %s\n\n", response_str.c_str());
 					}
 					else
 					{
-						mg_http_reply(conn, 500, "", "Internal Server Error");
+						std::string headers = "mcp-session-id: " + session_id + "\r\n";
+						mg_http_reply(conn, 202, headers.c_str(), "");
+						return;
 					}
-					mg_iobuf_free(&io);
 				}
 			}
 		}
@@ -409,70 +352,6 @@ void McpHttpServerTransport::ClearSession()
 			it = m_sessions.erase(it);
 		}
 	}
-}
-
-void McpHttpServerTransport::cbInitialize(void* rpc_req)
-{
-	mg_rpc_req* r = (mg_rpc_req*)rpc_req;
-	McpHttpServerTransport* self = (McpHttpServerTransport*)r->rpc->fn_data;
-
-	std::string request_str = std::string(r->frame.buf, r->frame.buf + r->frame.len);
-	std::string response_str;
-	self->m_handler->OnRecv(request_str, response_str);
-
-	mg_xprintf(
-		r->pfn, r->pfn_data,
-		"event: message\ndata: %s\n\n",
-		response_str.c_str()
-	);
-}
-
-void McpHttpServerTransport::cbLoggingSetLevel(void* rpc_req)
-{
-	mg_rpc_req* r = (mg_rpc_req*)rpc_req;
-	McpHttpServerTransport* self = (McpHttpServerTransport*)r->rpc->fn_data;
-
-	std::string request_str = std::string(r->frame.buf, r->frame.buf + r->frame.len);
-	std::string response_str;
-	self->m_handler->OnRecv(request_str, response_str);
-
-	mg_xprintf(
-		r->pfn, r->pfn_data,
-		"event: message\ndata: %s\n\n",
-		response_str.c_str()
-	);
-}
-
-void McpHttpServerTransport::cbToolsList(void* rpc_req)
-{
-	struct mg_rpc_req* r = (struct mg_rpc_req*)rpc_req;
-	McpHttpServerTransport* self = (McpHttpServerTransport*)r->rpc->fn_data;
-
-	std::string request_str = std::string(r->frame.buf, r->frame.buf + r->frame.len);
-	std::string response_str;
-	self->m_handler->OnRecv(request_str, response_str);
-
-	mg_xprintf(
-		r->pfn, r->pfn_data,
-		"event: message\ndata: %s\n\n",
-		response_str.c_str()
-	);
-}
-
-void McpHttpServerTransport::cbToolsCall(void* rpc_req)
-{
-	struct mg_rpc_req* r = (struct mg_rpc_req*)rpc_req;
-	McpHttpServerTransport* self = (McpHttpServerTransport*)r->rpc->fn_data;
-
-	std::string request_str = std::string(r->frame.buf, r->frame.buf + r->frame.len);
-	std::string response_str;
-	self->m_handler->OnRecv(request_str, response_str);
-
-	mg_xprintf(
-		r->pfn, r->pfn_data,
-		"event: message\ndata: %s\n\n",
-		response_str.c_str()
-	);
 }
 
 }
