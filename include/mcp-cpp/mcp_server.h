@@ -29,7 +29,7 @@ namespace Mcp {
 class McpServer : public McpServerTransport::Handler
 {
 public:
-	McpServer(const char* server_name);
+	McpServer(const char* server_name, const char* version);
 
 	enum PropertyType {
 		PROPERTY_NUMBER = 1,
@@ -75,6 +75,7 @@ protected:
 
 private:
 	std::string m_server_name;
+	std::string m_version;
 
 	struct McpTool {
 		std::string name;

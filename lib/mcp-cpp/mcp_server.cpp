@@ -23,9 +23,9 @@
 
 namespace Mcp {
 
-McpServer::McpServer(const char* server_name)
+McpServer::McpServer(const char* server_name, const char* version)
 	: m_server_name(server_name)
-	, m_tools()
+	, m_version(version)
 	, m_transport(nullptr)
 {
 }
@@ -181,13 +181,14 @@ void McpServer::OnInitialize(const nlohmann::json& request, nlohmann::json& resp
 				},
 				"serverInfo": {
 					"name": "",
-					"version": "1.0.0.0"
+					"version": ""
 				}
 			}
 		}
 	)"_json;
 
 	response["result"]["serverInfo"]["name"] = m_server_name;
+	response["result"]["serverInfo"]["version"] = m_version;
 }
 
 void McpServer::OnLoggingSetLevel(const nlohmann::json& request, nlohmann::json& response)

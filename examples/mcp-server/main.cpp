@@ -31,7 +31,7 @@ using namespace Mcp;
 
 int main()
 {
-	McpServer server("MCP Test");
+	McpServer server("MCP Test", "1.0.0.0");
 
 	server.AddTool(
 		"get_current_time",
