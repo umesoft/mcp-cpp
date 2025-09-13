@@ -43,6 +43,7 @@ private:
 	std::condition_variable m_cv;
 	std::thread m_worker;
 	char* m_buffer;
+	std::mutex m_send_mutex;
 };
 
 }

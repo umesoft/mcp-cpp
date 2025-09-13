@@ -76,12 +76,14 @@ bool McpStdioServerTransport::OnProcRequest()
 			nlohmann::json response;
 			if (m_handler->OnRecv(request, response))
 			{
+				std::lock_guard<std::mutex> lock(m_send_mutex);
 				fprintf(stdout, "%s\n", response.dump().c_str());
 				fflush(stdout);
 			}
 		}
 		catch (const nlohmann::json::parse_error& e)
 		{
+			std::lock_guard<std::mutex> lock(m_send_mutex);
 			fprintf(stderr, "Error: Invalid message\n");
 			fflush(stderr);
 		}
@@ -94,6 +96,7 @@ bool McpStdioServerTransport::OnProcRequest()
 
 void McpStdioServerTransport::OnSendNotification(const nlohmann::json& notification)
 {
+	std::lock_guard<std::mutex> lock(m_send_mutex);
 	fprintf(stdout, "%s\n", notification.dump().c_str());
 	fflush(stdout);
 }
