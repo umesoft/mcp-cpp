@@ -29,7 +29,7 @@ namespace Mcp {
 
 class McpStdioServerTransport : public McpServerTransport {
 public:
-	McpStdioServerTransport();
+	McpStdioServerTransport(int max_request_size = 128 * 1024);
 	virtual ~McpStdioServerTransport();
 
 protected:
@@ -42,7 +42,8 @@ private:
 	std::mutex m_mutex;
 	std::condition_variable m_cv;
 	std::thread m_worker;
-	char* m_buffer;
+	int m_max_request_size;
+	char* m_request_buffer;
 	std::mutex m_send_mutex;
 };
 

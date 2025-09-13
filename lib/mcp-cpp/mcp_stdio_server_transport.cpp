@@ -21,16 +21,15 @@
 namespace Mcp
 {
 
-const int max_request_size = 128 * 1024;
-
-McpStdioServerTransport::McpStdioServerTransport()
+McpStdioServerTransport::McpStdioServerTransport(int max_request_size)
+	: m_max_request_size(max_request_size)
 {
-	m_buffer = new char[max_request_size];
+	m_request_buffer = new char[m_max_request_size];
 }
 
 McpStdioServerTransport::~McpStdioServerTransport()
 {
-	delete[] m_buffer;
+	delete[] m_request_buffer;
 }
 
 void McpStdioServerTransport::OnOpen()
@@ -39,17 +38,17 @@ void McpStdioServerTransport::OnOpen()
 	{
 		while (1)
 		{
-			if (fgets(m_buffer, max_request_size, stdin) == nullptr)
+			if (fgets(m_request_buffer, m_max_request_size, stdin) == nullptr)
 			{
 				break;
 			}
 
-			int pos = strlen(m_buffer);
-			if (m_buffer[pos - 1] == '\n')
+			int pos = strlen(m_request_buffer);
+			if (m_request_buffer[pos - 1] == '\n')
 			{
 				{
 					std::lock_guard<std::mutex> lock(m_mutex);
-					m_queue.push(m_buffer);
+					m_queue.push(m_request_buffer);
 				}
 				m_cv.notify_one();
 			}
