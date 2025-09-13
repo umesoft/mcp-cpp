@@ -176,7 +176,7 @@ void McpHttpServerTransport::OnClose()
 	m_mgr = nullptr;
 }
 
-bool McpHttpServerTransport::RecvRequest()
+bool McpHttpServerTransport::OnProcRequest()
 {
 	mg_mgr* s_mgr = (mg_mgr*)m_mgr;
 
@@ -416,17 +416,14 @@ void McpHttpServerTransport::cbInitialize(void* rpc_req)
 	mg_rpc_req* r = (mg_rpc_req*)rpc_req;
 	McpHttpServerTransport* self = (McpHttpServerTransport*)r->rpc->fn_data;
 
-	nlohmann::json request = nlohmann::json::parse(
-		r->frame.buf, 
-		r->frame.buf + r->frame.len
-	);
-	nlohmann::json response;
-	// self->m_handler->OnInitialize(request, response);
+	std::string request_str = std::string(r->frame.buf, r->frame.buf + r->frame.len);
+	std::string response_str;
+	self->m_handler->OnRecv(request_str, response_str);
 
 	mg_xprintf(
 		r->pfn, r->pfn_data,
 		"event: message\ndata: %s\n\n",
-		response.dump().c_str()
+		response_str.c_str()
 	);
 }
 
@@ -435,17 +432,14 @@ void McpHttpServerTransport::cbLoggingSetLevel(void* rpc_req)
 	mg_rpc_req* r = (mg_rpc_req*)rpc_req;
 	McpHttpServerTransport* self = (McpHttpServerTransport*)r->rpc->fn_data;
 
-	nlohmann::json request = nlohmann::json::parse(
-		r->frame.buf,
-		r->frame.buf + r->frame.len
-	);
-	nlohmann::json response;
-	// self->m_handler->OnLoggingSetLevel(request, response);
+	std::string request_str = std::string(r->frame.buf, r->frame.buf + r->frame.len);
+	std::string response_str;
+	self->m_handler->OnRecv(request_str, response_str);
 
 	mg_xprintf(
 		r->pfn, r->pfn_data,
 		"event: message\ndata: %s\n\n",
-		response.dump().c_str()
+		response_str.c_str()
 	);
 }
 
@@ -454,17 +448,14 @@ void McpHttpServerTransport::cbToolsList(void* rpc_req)
 	struct mg_rpc_req* r = (struct mg_rpc_req*)rpc_req;
 	McpHttpServerTransport* self = (McpHttpServerTransport*)r->rpc->fn_data;
 
-	nlohmann::json request = nlohmann::json::parse(
-		r->frame.buf,
-		r->frame.buf + r->frame.len
-	);
-	nlohmann::json response;
-	// self->m_handler->OnToolsList(request, response);
+	std::string request_str = std::string(r->frame.buf, r->frame.buf + r->frame.len);
+	std::string response_str;
+	self->m_handler->OnRecv(request_str, response_str);
 
 	mg_xprintf(
 		r->pfn, r->pfn_data,
 		"event: message\ndata: %s\n\n",
-		response.dump().c_str()
+		response_str.c_str()
 	);
 }
 
@@ -473,17 +464,14 @@ void McpHttpServerTransport::cbToolsCall(void* rpc_req)
 	struct mg_rpc_req* r = (struct mg_rpc_req*)rpc_req;
 	McpHttpServerTransport* self = (McpHttpServerTransport*)r->rpc->fn_data;
 
-	nlohmann::json request = nlohmann::json::parse(
-		r->frame.buf,
-		r->frame.buf + r->frame.len
-	);
-	nlohmann::json response;
-	// self->m_handler->OnToolCall(request, response);
+	std::string request_str = std::string(r->frame.buf, r->frame.buf + r->frame.len);
+	std::string response_str;
+	self->m_handler->OnRecv(request_str, response_str);
 
 	mg_xprintf(
 		r->pfn, r->pfn_data,
 		"event: message\ndata: %s\n\n",
-		response.dump().c_str()
+		response_str.c_str()
 	);
 }
 

@@ -44,7 +44,7 @@ public:
 	virtual void OnOpen();
 	virtual void OnClose();
 
-	virtual bool RecvRequest();
+	virtual bool OnProcRequest();
 
 private:
 	bool m_use_tls;
