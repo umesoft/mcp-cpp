@@ -144,7 +144,7 @@ bool McpHttpServerTransport::OnProcRequest()
 {
 	mg_mgr* s_mgr = (mg_mgr*)m_mgr;
 
-	mg_mgr_poll(s_mgr, 1000);
+	mg_mgr_poll(s_mgr, 100);
 
 	return true;
 }
@@ -274,6 +274,11 @@ void McpHttpServerTransport::cbEvHander(void* connection, int event_code, void* 
 						return;
 					}
 				}
+				else
+				{
+					mg_http_reply(conn, 405, "", "");
+					return;
+				}
 			}
 		}
 		else if (self->m_use_authorization && mg_strcmp(hm->uri, mg_str(("/.well-known/oauth-protected-resource" + self->m_entry_point).c_str())) == 0)
@@ -285,10 +290,10 @@ void McpHttpServerTransport::cbEvHander(void* connection, int event_code, void* 
 					200,
 					"Access-Control-Allow-Origin: *\r\nContent-Type: application/json\r\n",
 					"{"
-					"\"resource\": \"%s\","
-					"\"authorization_servers\": [%s],"
-					"\"scopes_supported\": [%s],"
-					"\"bearer_methods_supported\": [\"header\"]"
+						"\"resource\": \"%s\","
+						"\"authorization_servers\": [%s],"
+						"\"scopes_supported\": [%s],"
+						"\"bearer_methods_supported\": [\"header\"]"
 					"}",
 					self->m_url.c_str(),
 					self->m_authorization_servers.c_str(),
