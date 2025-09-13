@@ -28,11 +28,6 @@ public:
 		virtual ~Handler() {}
 
 		virtual bool OnRecv(const std::string& request_str, std::string& response_str) = 0;
-
-		virtual void OnInitialize(const nlohmann::json& request, nlohmann::json& response) = 0;
-		virtual void OnLoggingSetLevel(const nlohmann::json& request, nlohmann::json& response) = 0;
-		virtual void OnToolsList(const nlohmann::json& request, nlohmann::json& response) = 0;
-		virtual void OnToolCall(const nlohmann::json& request, nlohmann::json& response) = 0;
 	};
 
 public:

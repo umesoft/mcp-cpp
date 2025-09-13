@@ -68,11 +68,6 @@ public:
 protected:
 	virtual bool OnRecv(const std::string& request_str, std::string& response_str);
 
-	virtual void OnInitialize(const nlohmann::json& request, nlohmann::json& response);
-	virtual void OnLoggingSetLevel(const nlohmann::json& request, nlohmann::json& response);
-	virtual void OnToolsList(const nlohmann::json& request, nlohmann::json& response);
-	virtual void OnToolCall(const nlohmann::json& request, nlohmann::json& response);
-
 private:
 	std::string m_server_name;
 	std::string m_version;
@@ -87,6 +82,11 @@ private:
 	std::map<std::string, McpTool> m_tools;
 
 	McpServerTransport* m_transport;
+
+	void OnInitialize(const nlohmann::json& request, nlohmann::json& response);
+	void OnLoggingSetLevel(const nlohmann::json& request, nlohmann::json& response);
+	void OnToolsList(const nlohmann::json& request, nlohmann::json& response);
+	bool OnToolCall(const nlohmann::json& request, nlohmann::json& response);
 
 	static std::string GetPropertyType(PropertyType type);
 	static std::string GetPropertyValue(const McpTool& tool, McpPropertyValue type, bool escape);

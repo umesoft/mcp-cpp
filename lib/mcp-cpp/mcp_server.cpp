@@ -113,7 +113,29 @@ bool McpServer::OnRecv(const std::string& request_str, std::string& response_str
 			}
 			else if (method == "tools/call")
 			{
-				OnToolCall(request, response);
+				nlohmann::json result_or_error;
+				if (OnToolCall(request, result_or_error))
+				{
+					response = R"(
+						{
+							"jsonrpc": "2.0",
+							"id": null,
+							"result": {}
+						}
+					)"_json;
+					response["result"] = result_or_error;
+				}
+				else
+				{
+					response = R"(
+						{
+							"jsonrpc": "2.0",
+							"id": null,
+							"error": {}
+						}
+					)"_json;
+					response["error"] = result_or_error;
+				}
 			}
 			else
 			{
@@ -200,8 +222,6 @@ void McpServer::OnLoggingSetLevel(const nlohmann::json& request, nlohmann::json&
 			"result": {}
 		}
 	)"_json;
-
-	response["id"] = request.at("id").get<int>();
 }
 
 void McpServer::OnToolsList(const nlohmann::json& request, nlohmann::json& response)
@@ -322,7 +342,7 @@ void McpServer::OnToolsList(const nlohmann::json& request, nlohmann::json& respo
 	response["result"] = nlohmann::json::parse(tools_json);
 }
 
-void McpServer::OnToolCall(const nlohmann::json& request, nlohmann::json& response)
+bool McpServer::OnToolCall(const nlohmann::json& request, nlohmann::json& response)
 {
 	std::string name = request["params"]["name"];
 
@@ -331,24 +351,12 @@ void McpServer::OnToolCall(const nlohmann::json& request, nlohmann::json& respon
 	{
 		response = R"(
 			{
-				"jsonrpc": "2.0",
-				"id": 0,
-				"error": {
-					"code": -32602,
-					"message": "Unknown tool: invalid_tool_name"
-				}
+				"code": -32602,
+				"message": "Unknown tool: invalid_tool_name"
 			}
 		)"_json;
-		return;
+		return false;
 	}
-
-	response = R"(
-		{
-			"jsonrpc": "2.0",
-			"id": 0,
-			"result": {}
-		}
-	)"_json;
 
 	auto raequestArguments = request["params"]["arguments"];
 
@@ -366,6 +374,17 @@ void McpServer::OnToolCall(const nlohmann::json& request, nlohmann::json& respon
 		else
 		{
 			arguments[prop.property_name] = "";
+		}
+
+		if (prop.required && arguments[prop.property_name].empty())
+		{
+			response = R"(
+				{
+					"code": -32602,
+					"message": "Invalid_param: missing_required_params"
+				}
+			)"_json;
+			return false;
 		}
 	}
 
@@ -424,7 +443,9 @@ void McpServer::OnToolCall(const nlohmann::json& request, nlohmann::json& respon
 		content_json += "]}}";
 	}
 
-	response["result"] = nlohmann::json::parse(content_json);
+	response = nlohmann::json::parse(content_json);
+
+	return true;
 }
 
 std::string McpServer::GetPropertyType(PropertyType type)

@@ -421,7 +421,7 @@ void McpHttpServerTransport::cbInitialize(void* rpc_req)
 		r->frame.buf + r->frame.len
 	);
 	nlohmann::json response;
-	self->m_handler->OnInitialize(request, response);
+	// self->m_handler->OnInitialize(request, response);
 
 	mg_xprintf(
 		r->pfn, r->pfn_data,
@@ -440,7 +440,7 @@ void McpHttpServerTransport::cbLoggingSetLevel(void* rpc_req)
 		r->frame.buf + r->frame.len
 	);
 	nlohmann::json response;
-	self->m_handler->OnLoggingSetLevel(request, response);
+	// self->m_handler->OnLoggingSetLevel(request, response);
 
 	mg_xprintf(
 		r->pfn, r->pfn_data,
@@ -459,7 +459,7 @@ void McpHttpServerTransport::cbToolsList(void* rpc_req)
 		r->frame.buf + r->frame.len
 	);
 	nlohmann::json response;
-	self->m_handler->OnToolsList(request, response);
+	// self->m_handler->OnToolsList(request, response);
 
 	mg_xprintf(
 		r->pfn, r->pfn_data,
@@ -478,7 +478,7 @@ void McpHttpServerTransport::cbToolsCall(void* rpc_req)
 		r->frame.buf + r->frame.len
 	);
 	nlohmann::json response;
-	self->m_handler->OnToolCall(request, response);
+	// self->m_handler->OnToolCall(request, response);
 
 	mg_xprintf(
 		r->pfn, r->pfn_data,
