@@ -28,7 +28,6 @@ Use cmake or vc.
 ## Used libraries
 
 - JWT++ (https://github.com/Thalhammer/jwt-cpp)
-  includes PicoJSON.
 - JSON for Modern C++ (https://github.com/nlohmann/json)
 - Mongoose (https://github.com/cesanta/mongoose)
 - OpenSSL
