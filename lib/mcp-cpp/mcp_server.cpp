@@ -428,7 +428,11 @@ void McpServer::SendToolResponse(const std::string& session_id, const std::strin
 					"text": ""
 				}
 			)"_json;
-			content["text"] = it->value;
+
+			if (it->properties.size() > 0)
+			{
+				content["text"] = it->properties[0].value;
+			}
 
 			response["result"]["content"].emplace_back(content);
 		}

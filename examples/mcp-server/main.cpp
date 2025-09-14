@@ -57,7 +57,6 @@ int main()
 			strftime(time_str, sizeof(time_str), "%H:%M:%S", tm_info);
 
 			McpServer::McpContent content;
-
 			content.properties.push_back({
 				.property_name = "date",
 				.value = date_str
@@ -111,7 +110,9 @@ int main()
 			std::vector<McpServer::McpContent> contents;
 
 			McpServer::McpContent content;
-			content.value = "start!",
+			content.properties.push_back({
+				.value = "start!"
+				});
 			contents.emplace_back(content);
 
 			server.SendToolResponse(session_id, "count_down", contents, false);
@@ -156,7 +157,9 @@ int main()
 				std::vector<McpServer::McpContent> contents;
 
 				McpServer::McpContent content;
-				content.value = "startfinish!",
+				content.properties.push_back({
+					.value = "finish!"
+					});
 				contents.emplace_back(content);
 
 				server.SendToolResponse(session_id, "count_down", contents);
