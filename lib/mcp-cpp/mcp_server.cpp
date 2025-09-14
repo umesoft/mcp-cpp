@@ -400,11 +400,23 @@ void McpServer::SendToolResponse(const std::string& session_id, const std::strin
 	}
 	McpTool& tool = it2->second;
 
-	auto result = R"(
+	auto response = R"(
 		{
-			"content": []
+			"jsonrpc": "2.0",
+			"id": null,
+			"result": {
+				"content": []
+			}
 		}
 	)"_json;
+
+	auto it = m_request_id.find(session_id);
+	if (it == m_request_id.end())
+	{
+		return;
+	}
+
+	response["id"] = it->second;
 
 	if (tool.output_schema.size() == 0)
 	{
@@ -418,7 +430,7 @@ void McpServer::SendToolResponse(const std::string& session_id, const std::strin
 			)"_json;
 			content["text"] = it->value;
 
-			result["content"].emplace_back(content);
+			response["result"]["content"].emplace_back(content);
 		}
 	}
 	else
@@ -448,29 +460,14 @@ void McpServer::SendToolResponse(const std::string& session_id, const std::strin
 			}
 
 			content_json += "}\"}";
-			result["content"].emplace_back(nlohmann::json::parse(content_json));
+			response["result"]["content"].emplace_back(nlohmann::json::parse(content_json));
 
 			structured_content_json += "}";
 			structured_content["content"].emplace_back(nlohmann::json::parse(structured_content_json));
 		}
 
-		result["structuredContent"] = structured_content;
+		response["result"]["structuredContent"] = structured_content;
 	}
-
-	auto response = R"(
-		{
-			"jsonrpc": "2.0",
-			"id": null,
-			"result": {}
-		}
-	)"_json;
-
-	auto it = m_request_id.find(session_id);
-	if (it != m_request_id.end())
-	{
-		response["id"] = it->second;
-	}
-	response["result"] = result;
 
 	m_transport->SendResponse(session_id, response.dump(), is_finish);
 
