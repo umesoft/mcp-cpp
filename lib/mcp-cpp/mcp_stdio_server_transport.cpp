@@ -68,7 +68,8 @@ bool McpStdioServerTransport::OnProcRequest()
 	{
 		const std::string& request_str = m_queue.front();
 		std::string response_str;
-		if (m_handler->OnRecv(request_str, response_str))
+		bool is_progress = false;
+		if (m_handler->OnRecv("", request_str, response_str, is_progress))
 		{
 			std::lock_guard<std::mutex> lock(m_send_mutex);
 			fprintf(stdout, "%s\n", response_str.c_str());
@@ -81,7 +82,7 @@ bool McpStdioServerTransport::OnProcRequest()
 	return true;
 }
 
-void McpStdioServerTransport::OnSendNotification(const std::string& notification_str)
+void McpStdioServerTransport::OnSendNotification(const std::string& /*session_id*/, const std::string& notification_str, bool /*is_finish*/)
 {
 	std::lock_guard<std::mutex> lock(m_send_mutex);
 	fprintf(stdout, "%s\n", notification_str.c_str());

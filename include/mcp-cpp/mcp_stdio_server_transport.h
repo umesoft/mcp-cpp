@@ -35,7 +35,7 @@ public:
 protected:
 	virtual void OnOpen();
 	virtual bool OnProcRequest();
-	virtual void OnSendNotification(const std::string& notification_str);
+	virtual void OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish);
 
 private:
 	std::queue<std::string> m_queue;

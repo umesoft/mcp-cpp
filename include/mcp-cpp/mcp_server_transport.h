@@ -27,7 +27,7 @@ public:
 	public:
 		virtual ~Handler() {}
 
-		virtual bool OnRecv(const std::string& request_str, std::string& response_str) = 0;
+		virtual bool OnRecv(const std::string& session_id, const std::string& request_str, std::string& response_str, bool& is_prgress) = 0;
 	};
 
 public:
@@ -38,7 +38,7 @@ public:
 	void Close();
 
 	bool ProcRequest();
-	void SendNotification(const std::string& notification_str);
+	void SendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish);
 
 protected:
 	Handler* m_handler;
@@ -46,7 +46,7 @@ protected:
 	virtual void OnOpen() {};
 	virtual void OnClose() {};
 	virtual bool OnProcRequest() { return true; };
-	virtual void OnSendNotification(const std::string& notification_str) {};
+	virtual void OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish) {};
 };
 
 }

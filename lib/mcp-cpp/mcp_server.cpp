@@ -35,7 +35,7 @@ void McpServer::AddTool(
 	const char* tool_description,
 	const std::vector<McpProperty>& input_schema,
 	const std::vector<McpProperty>& output_schema,
-	std::function <std::vector<McpContent>(const std::map<std::string, std::string>& args)> callback
+	std::function <std::vector<McpContent>(const std::string& session_id, const std::map<std::string, std::string>& args, bool& is_progress)> callback
 )
 {
 	McpTool tool;
@@ -73,7 +73,7 @@ bool McpServer::Run(McpServerTransport* transport)
 	return true;
 }
 
-bool McpServer::OnRecv(const std::string& request_str, std::string& response_str)
+bool McpServer::OnRecv(const std::string& session_id, const std::string& request_str, std::string& response_str, bool& is_prgress)
 {
 	nlohmann::json response;
 
@@ -115,7 +115,7 @@ bool McpServer::OnRecv(const std::string& request_str, std::string& response_str
 			else if (method == "tools/call")
 			{
 				nlohmann::json result_or_error;
-				if (OnToolCall(request, result_or_error))
+				if (OnToolCall(session_id, request, result_or_error, is_prgress))
 				{
 					response = R"(
 						{
@@ -343,7 +343,7 @@ void McpServer::OnToolsList(const nlohmann::json& request, nlohmann::json& respo
 	response["result"] = nlohmann::json::parse(tools_json);
 }
 
-bool McpServer::OnToolCall(const nlohmann::json& request, nlohmann::json& response)
+bool McpServer::OnToolCall(const std::string& session_id, const nlohmann::json& request, nlohmann::json& response, bool& is_progress)
 {
 	std::string name = request["params"]["name"];
 
@@ -389,7 +389,7 @@ bool McpServer::OnToolCall(const nlohmann::json& request, nlohmann::json& respon
 		}
 	}
 
-	std::vector<McpContent> contents = tool.callback(arguments);
+	std::vector<McpContent> contents = tool.callback(session_id, arguments, is_progress);
 	std::string content_json = "";
 	std::string structured_content_json = "";
 
@@ -490,7 +490,7 @@ std::string McpServer::GetPropertyValue(const McpTool& tool, McpPropertyValue va
 	}
 }
 
-void McpServer::SendNotification(const std::string& method, const nlohmann::json& params)
+void McpServer::SendNotification(const std::string& session_id, const std::string& method, const nlohmann::json& params, bool is_finish)
 {
 	auto notification = R"(
 		{
@@ -500,10 +500,10 @@ void McpServer::SendNotification(const std::string& method, const nlohmann::json
 		}
 	)"_json;
 
-	notification["method"] = "notification/" + method;
+	notification["method"] = "notifications/" + method;
 	notification["params"] = params;
 
-	m_transport->SendNotification(notification.dump());
+	m_transport->SendNotification(session_id, notification.dump(), is_finish);
 }
 
 }

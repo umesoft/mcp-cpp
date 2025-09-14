@@ -21,6 +21,8 @@
 
 #include <functional>
 #include <map>
+#include <mutex>
+#include <queue>
 #include <vector>
 
 namespace Mcp {
@@ -42,6 +44,7 @@ public:
 	virtual void OnOpen();
 	virtual void OnClose();
 	virtual bool OnProcRequest();
+	virtual void OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish);
 
 private:
 	std::string m_host;
@@ -60,9 +63,21 @@ private:
 	std::string m_authorization_servers;
 	std::string m_scopes_supported;
 
-	std::map<std::string, long> m_sessions;
+	struct SessionInfo {
+		std::string session_id;
+		int is_alive;
 
-	bool IsEnableSessionId(std::string session_id);
+		void* connection;
+
+		std::queue<std::string> notifications;
+		bool notification_is_finish;
+	};
+
+	std::map<std::string, SessionInfo> m_sessions;
+	std::recursive_mutex m_mutex;
+
+	SessionInfo* CreateSession(void* connection);
+	SessionInfo* FindSession(std::string session_id);
 	void EraseSession(std::string session_id);
 	void ClearSession();
 

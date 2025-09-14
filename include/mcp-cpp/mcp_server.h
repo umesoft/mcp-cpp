@@ -58,15 +58,15 @@ public:
 		const char* tool_description, 
 		const std::vector<McpProperty>& input_schema,
 		const std::vector<McpProperty>& output_schema,
-		std::function <std::vector<McpContent>(const std::map<std::string, std::string>& args)> callback
+		std::function <std::vector<McpContent>(const std::string& session_id, const std::map<std::string, std::string>& args, bool& is_progress)> callback
 		);
 
 	bool Run(McpServerTransport* transport);
 
-	void SendNotification(const std::string& method, const nlohmann::json& params);
+	void SendNotification(const std::string& session_id, const std::string& method, const nlohmann::json& params, bool is_finish);
 
 protected:
-	virtual bool OnRecv(const std::string& request_str, std::string& response_str);
+	virtual bool OnRecv(const std::string& session_id, const std::string& request_str, std::string& response_str, bool& prgress);
 
 private:
 	std::string m_server_name;
@@ -77,7 +77,7 @@ private:
 		std::string description;
 		std::map<std::string, McpProperty> input_schema;
 		std::map<std::string, McpProperty> output_schema;
-		std::function <std::vector<McpContent>(const std::map<std::string, std::string>& args)> callback;
+		std::function <std::vector<McpContent>(const std::string& session_id, const std::map<std::string, std::string>& args, bool& is_progress)> callback;
 	};
 	std::map<std::string, McpTool> m_tools;
 
@@ -86,7 +86,7 @@ private:
 	void OnInitialize(const nlohmann::json& request, nlohmann::json& response);
 	void OnLoggingSetLevel(const nlohmann::json& request, nlohmann::json& response);
 	void OnToolsList(const nlohmann::json& request, nlohmann::json& response);
-	bool OnToolCall(const nlohmann::json& request, nlohmann::json& response);
+	bool OnToolCall(const std::string& session_id, const nlohmann::json& request, nlohmann::json& response, bool& is_progress);
 
 	static std::string GetPropertyType(PropertyType type);
 	static std::string GetPropertyValue(const McpTool& tool, McpPropertyValue type, bool escape);

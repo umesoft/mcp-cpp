@@ -58,10 +58,10 @@ void McpHttpServerTransport::SetTls(
 	{
 		m_use_tls = false;
 	}
-	}
+}
 
 void McpHttpServerTransport::SetAuthorization(const char* authorization_servers, const char* scopes_supported)
-	{
+{
 	m_authorization_servers = authorization_servers;
 	m_scopes_supported = scopes_supported;
 
@@ -150,10 +150,24 @@ void McpHttpServerTransport::cbEvHander(void* connection, int event_code, void* 
 			mg_tls_init(conn, &opts);
 		}
 	}
+	else if (event_code == MG_EV_CLOSE)
+	{
+		std::lock_guard<std::recursive_mutex> lock(self->m_mutex);
+
+		for (auto it = self->m_sessions.begin(); it != self->m_sessions.end(); it++)
+		{
+			SessionInfo& session_info = it->second;
+			if (session_info.connection == connection)
+			{
+				session_info.connection = nullptr;
+				break;
+			}
+		}
+	}
 	else if (event_code == MG_EV_HTTP_MSG)
 	{
 		struct mg_http_message* hm = (struct mg_http_message*)event_data;
-		if (mg_match(hm->uri, mg_str(self->m_entry_point.data()), NULL))
+		if (mg_match(hm->uri, mg_str(self->m_entry_point.c_str()), NULL))
 		{
 			std::string auth_token = "";
 			std::string session_id = "";
@@ -228,30 +242,53 @@ void McpHttpServerTransport::cbEvHander(void* connection, int event_code, void* 
 				char* method = mg_json_get_str(hm->body, "$.method");
 				if (method != nullptr)
 				{
+					std::lock_guard<std::recursive_mutex> lock(self->m_mutex);
+
+					SessionInfo* session_info = nullptr;
 					if (strcmp(method, "initialize") == 0)
 					{
-						session_id = CreateSessionId();
+						session_info = self->CreateSession(conn);
 					}
 					else
 					{
-						if (!self->IsEnableSessionId(session_id))
-						{
-							mg_http_reply(conn, 400, "", "");
-							return;
-						}
+						session_info = self->FindSession(session_id);
 					}
-					self->m_sessions[session_id] = 1;
+					if (session_info == nullptr)
+					{
+						mg_http_reply(conn, 400, "", "");
+						return;
+					}
+					session_info->connection = connection;
 
 					std::string request_str = std::string(hm->body.buf, hm->body.buf + hm->body.len);
 					std::string response_str;
-					if (self->m_handler->OnRecv(request_str, response_str))
+					bool is_progress = false;
+					if (self->m_handler->OnRecv(session_info->session_id, request_str, response_str, is_progress))
 					{
-						std::string headers = "Content-Type: text/event-stream\r\nmcp-session-id: " + session_id + "\r\n";
-						mg_http_reply(conn, 200, headers.c_str(), "event: message\ndata: %s\n\n", response_str.c_str());
+						std::string headers =
+							"HTTP/1.1 200 OK\r\n"
+							"Transfer-Encoding: chunked\r\n"
+							"Content-Type: text/event-stream\r\nmcp-session-id: " + session_info->session_id + "\r\n"
+							"\r\n";
+						mg_printf(conn, headers.c_str());
+
+						while (!session_info->notifications.empty())
+						{
+							std::string& notification_str = session_info->notifications.front();
+							mg_http_printf_chunk(conn, "event: message\ndata: %s\n\n", notification_str.c_str());
+							session_info->notifications.pop();
+						}
+
+						mg_http_printf_chunk(conn, "event: message\ndata: %s\n\n", response_str.c_str());
+
+						if (!is_progress)
+						{
+							mg_http_write_chunk(conn, "", 0);
+						}
 					}
 					else
 					{
-						std::string headers = "mcp-session-id: " + session_id + "\r\n";
+						std::string headers = "mcp-session-id: " + session_info->session_id + "\r\n";
 						mg_http_reply(conn, 202, headers.c_str(), "");
 					}
 				}
@@ -298,6 +335,44 @@ void McpHttpServerTransport::cbEvHander(void* connection, int event_code, void* 
 			mg_http_reply(conn, 405, "", "");
 		}
 	}
+	else if (event_code == MG_EV_POLL)
+	{
+		std::lock_guard<std::recursive_mutex> lock(self->m_mutex);
+
+		for (auto it = self->m_sessions.begin(); it != self->m_sessions.end(); it++)
+		{
+			SessionInfo& session_info = it->second;
+			if (session_info.connection == connection)
+			{
+				mg_connection* target_conn = (mg_connection*)session_info.connection;
+				while (!session_info.notifications.empty())
+				{
+					std::string& notification_str = session_info.notifications.front();
+					mg_http_printf_chunk(target_conn, "event: message\ndata: %s\n\n", notification_str.c_str());
+					session_info.notifications.pop();
+				}
+				if (session_info.notification_is_finish)
+				{
+					mg_http_write_chunk(conn, "", 0);
+					session_info.notification_is_finish = false;
+				}
+				break;
+			}
+		}
+	}
+}
+
+void McpHttpServerTransport::OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish)
+{
+	std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
+	auto it = m_sessions.find(session_id);
+	if (it != m_sessions.end())
+	{
+		SessionInfo& session_info = it->second;
+		session_info.notifications.push(notification_str);
+		session_info.notification_is_finish = is_finish;
+	}
 }
 
 void McpHttpServerTransport::cbTimerHandler(void* timer_data)
@@ -306,9 +381,30 @@ void McpHttpServerTransport::cbTimerHandler(void* timer_data)
 	self->ClearSession();
 }
 
-bool McpHttpServerTransport::IsEnableSessionId(std::string session_id)
+McpHttpServerTransport::SessionInfo* McpHttpServerTransport::CreateSession(void* connection)
 {
-	return m_sessions.find(session_id) != m_sessions.end();
+	std::string session_id = CreateSessionId();
+	SessionInfo& session_info = m_sessions[session_id];
+
+	session_info.session_id = session_id;
+	session_info.connection = connection;
+	session_info.is_alive = 1;
+
+	return &session_info;
+}
+
+McpHttpServerTransport::SessionInfo* McpHttpServerTransport::FindSession(std::string session_id)
+{
+	auto it = m_sessions.find(session_id);
+	if (it == m_sessions.end())
+	{
+		return nullptr;
+	}
+
+	SessionInfo& session_info = it->second;
+	session_info.is_alive = 1;
+
+	return &session_info;
 }
 
 void McpHttpServerTransport::EraseSession(std::string session_id)
@@ -325,9 +421,10 @@ void McpHttpServerTransport::ClearSession()
 	auto it = m_sessions.begin();
 	while (it != m_sessions.end())
 	{
-		if (it->second > 0)
+		SessionInfo& session_info = it->second;
+		if (session_info.is_alive > 0)
 		{
-			it->second--;
+			session_info.is_alive--;
 			it++;
 		}
 		else

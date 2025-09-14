@@ -42,7 +42,7 @@ int main()
 			{ "location", McpServer::PROPERTY_STRING, "location", false }
 		},
 		std::vector<McpServer::McpProperty> {},
-		[](const std::map<std::string, std::string>& args) -> std::vector<McpServer::McpContent>
+		[](const std::string& session_id, const std::map<std::string, std::string>& args, bool& is_progress) -> std::vector<McpServer::McpContent>
 		{
 			std::vector<McpServer::McpContent> contents;
 
@@ -72,7 +72,7 @@ int main()
 			{ "value", McpServer::PROPERTY_STRING, "Start counting down from this value", true }
 		},
 		std::vector<McpServer::McpProperty> {},
-		[&server, &count_down_worker](const std::map<std::string, std::string>& args) -> std::vector<McpServer::McpContent>
+		[&server, &count_down_worker](const std::string& session_id, const std::map<std::string, std::string>& args, bool& is_progress) -> std::vector<McpServer::McpContent>
 		{
 			if (count_down_worker && count_down_worker->joinable())
 			{
@@ -83,7 +83,7 @@ int main()
 
 			int start_value = atoi(args.at("value").c_str());
 
-			count_down_worker = std::make_unique<std::thread>([&server, start_value]
+			count_down_worker = std::make_unique<std::thread>([&server, session_id, start_value]
 			{
 				for (int i = start_value; i >= 0; i--)
 				{
@@ -95,7 +95,7 @@ int main()
 						}
 					)"_json;
 					params["value"] = i;
-					server.SendNotification("count_down", params);
+					server.SendNotification(session_id, "count_down", params, i == 0);
 				}
 			});
 
@@ -105,6 +105,8 @@ int main()
 				.value = "start!",
 			};
 			contents.push_back(content);
+
+			is_progress = true;
 
 			return contents;
 		}
