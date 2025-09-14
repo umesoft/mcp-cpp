@@ -10,7 +10,9 @@ The following features have been implemented:
 - **Transport** (stdio & Streamable HTTP)  
 - **Authorization** (Tested with Auth0)  
 - **Utilities** (Ping)  
-- **Tools**  
+- **Tools**
+  - List
+  - Call
   - Notification  
   - OutputSchema & structuredContent  
 
