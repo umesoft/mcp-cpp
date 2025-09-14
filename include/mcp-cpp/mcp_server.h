@@ -48,7 +48,6 @@ public:
 		std::string value;
 	};
 	struct McpContent {
-		PropertyType property_type;
 		std::string value;
 		std::vector<McpPropertyValue> properties;
 	};

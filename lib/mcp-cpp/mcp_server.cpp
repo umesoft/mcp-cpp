@@ -203,118 +203,101 @@ void McpServer::OnToolsList(const std::string& session_id, const nlohmann::json&
 		{
 			"jsonrpc": "2.0",
 			"id": 0,
-			"result": {}
+			"result": {
+				"tools": []
+			}
 		}
 	)"_json;
 
 	response["id"] = request.at("id").get<int>();
 
-	std::string tools_json = "";
 	for (auto it = m_tools.begin(); it != m_tools.end(); it++)
 	{
 		McpTool& tool = it->second;
 
-		if (!tools_json.empty()) {
-			tools_json += ",";
-		}
-		else {
-			tools_json = "{ \"tools\": [";
-		}
-		tools_json += "{"
-			"\"name\": \"" + tool.name + "\","
-			"\"description\": \"" + tool.description + "\"";
+		auto tool_record = R"(
+			{
+				"name": "",
+				"description": "",
+				"inputSchema": {
+					"type": "object",
+					"properties" : {},
+					"required": []
+				}
+			}
+		)"_json;
+
+		tool_record["name"] = tool.name;
+		tool_record["description"] = tool.description;
 
 		if (tool.input_schema.size() > 0)
 		{
-			tools_json += ",\"inputSchema\": {"
-				"\"type\": \"object\","
-				"\"properties\": {";
-
-			std::string required_properties = "";
-
-			int i = 0;
 			for (auto it = tool.input_schema.begin(); it != tool.input_schema.end(); it++)
 			{
-				if (i > 0)
-				{
-					tools_json += ",";
-				}
+				auto property_record = R"(
+					{ 
+						"type": "",
+						"description": ""
+					}
+				)"_json;
+
 				const auto& prop = it->second;
-				tools_json += "\"" + prop.property_name + "\": {"
-					"\"type\": \"" + GetPropertyType(prop.property_type) +
-					"\",\"description\": \"" + prop.description + "\"}";
+				property_record["type"] = GetPropertyType(prop.property_type);
+				property_record["description"] = prop.description;
+				tool_record["inputSchema"]["properties"][prop.property_name] = property_record;
 
 				if (prop.required)
 				{
-					if (!required_properties.empty())
-					{
-						required_properties += ",";
-					}
-					required_properties += "\"" + prop.property_name + "\"";
+					tool_record["inputSchema"]["required"].emplace_back(prop.property_name);
 				}
-				i++;
 			}
-
-			tools_json += "}";
-
-			if (!required_properties.empty()) {
-				tools_json += ", \"required\": [" + required_properties + "]";
-			}
-
-			tools_json += "}";
 		}
 
 		if (tool.output_schema.size() > 0)
 		{
-			tools_json += ",\"outputSchema\": {"
-				"\"type\": \"object\","
-				"\"properties\": {"
-				"\"content\": {"
-				"\"type\": \"array\","
-				"\"items\": {"
-				"\"type\": \"object\","
-				"\"properties\": {";
+			auto output_schema = R"(
+				{ 
+					"type": "object",
+					"properties": {
+						"content": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+								},
+								"required": []
+							}
+						}
+					},
+					"required": [ "content" ]
+				}
+			)"_json;
 
-			std::string required_properties = "";
-
-			int i = 0;
 			for (auto it = tool.output_schema.begin(); it != tool.output_schema.end(); it++)
 			{
-				if (i > 0)
-				{
-					tools_json += ",";
-				}
+				auto property_record = R"(
+					{ 
+						"type": "",
+						"description": ""
+					}
+				)"_json;
+
 				const auto& prop = it->second;
-				tools_json += "\"" + prop.property_name + "\": {"
-					"\"type\": \"" + GetPropertyType(prop.property_type) +
-					"\",\"description\": \"" + prop.description + "\"}";
+				property_record["type"] = GetPropertyType(prop.property_type);
+				property_record["description"] = prop.description;
+				output_schema["properties"]["content"]["items"]["properties"][prop.property_name] = property_record;
 
 				if (prop.required)
 				{
-					if (!required_properties.empty())
-					{
-						required_properties += ",";
-					}
-					required_properties += "\"" + prop.property_name + "\"";
+					output_schema["properties"]["content"]["items"]["required"].emplace_back(prop.property_name);
 				}
-				i++;
 			}
 
-			tools_json += "}";
-
-			if (!required_properties.empty())
-			{
-				tools_json += ", \"required\": [" + required_properties + "]";
-			}
-
-			tools_json += "}}},\"required\": [\"content\"]}";
+			tool_record["outputSchema"] = output_schema;
 		}
 
-		tools_json += "}";
+		response["result"]["tools"].emplace_back(tool_record);
 	}
-	tools_json += "]}";
-
-	response["result"] = nlohmann::json::parse(tools_json);
 
 	SendResponse(session_id, response);
 }
@@ -356,47 +339,6 @@ void McpServer::OnToolCall(const std::string& session_id, const nlohmann::json& 
 	}
 
 	tool.callback(session_id, arguments);
-}
-
-std::string McpServer::GetPropertyType(PropertyType type)
-{
-	switch (type) {
-	case PROPERTY_NUMBER:
-		return "number";
-	case PROPERTY_TEXT:
-		return "text";
-	case PROPERTY_STRING:
-		return "string";
-	case PROPERTY_OBJECT:
-		return "object";
-	default:
-		return "unknown";
-	}
-}
-
-std::string McpServer::GetPropertyValue(const McpTool& tool, McpPropertyValue value, bool escape)
-{
-	auto it = tool.output_schema.find(value.property_name);
-	if (it == tool.output_schema.end())
-	{
-		return "";
-	}
-
-	switch (it->second.property_type) {
-	case PROPERTY_NUMBER:
-		return value.value;
-	case PROPERTY_STRING:
-		if (escape)
-		{
-			return "\\\"" + value.value + "\\\"";
-		}
-		else
-		{
-			return "\"" + value.value + "\"";
-		}
-	default:
-		return "";
-	}
 }
 
 void McpServer::SendResponse(const std::string& session_id, const nlohmann::json& response)
@@ -458,61 +400,62 @@ void McpServer::SendToolResponse(const std::string& session_id, const std::strin
 	}
 	McpTool& tool = it2->second;
 
-	std::string content_json = "";
-	std::string structured_content_json = "";
+	auto result = R"(
+		{
+			"content": []
+		}
+	)"_json;
 
 	if (tool.output_schema.size() == 0)
 	{
-		for (size_t i = 0; i < contents.size(); i++)
+		for (auto it = contents.begin(); it != contents.end(); it++)
 		{
-			if (i > 0) {
-				content_json += ",";
-			}
-			else {
-				content_json = "{\"content\": [";
-			}
-			content_json += "{"
-				"\"type\": \"" + GetPropertyType(contents[i].property_type) + "\","
-				"\"text\": \"" + contents[i].value + "\""
-				"}";
+			auto content = R"(
+				{
+					"type": "text",
+					"text": ""
+				}
+			)"_json;
+			content["text"] = it->value;
+
+			result["content"].emplace_back(content);
 		}
-		content_json += "]}";
 	}
 	else
 	{
-		for (size_t i = 0; i < contents.size(); i++)
-		{
-			if (i > 0)
+		auto structured_content = R"(
 			{
-				content_json += ",";
-				structured_content_json += ",";
+				"content": []
 			}
-			else {
-				content_json = "{\"content\": [";
-				content_json = "\"structuredContent\": {\"content\": [";
-			}
-			content_json += "{\"type\": \"text\",\"text\": \"{";
-			structured_content_json += "{";
-			for (size_t j = 0; j < contents[i].properties.size(); j++)
+		)"_json;
+
+		for (auto it = contents.begin(); it != contents.end(); it++)
+		{
+			McpContent& content = *it;
+
+			std::string content_json = "{\"type\": \"text\",\"text\": \"{";
+			std::string structured_content_json = "{";
+
+			for (size_t j = 0; j < content.properties.size(); j++)
 			{
 				if (j > 0)
 				{
 					content_json += ",";
 					structured_content_json += ",";
 				}
-				content_json += "\\\"" + contents[i].properties[j].property_name + "\\\": " + GetPropertyValue(tool, contents[i].properties[j], true);
-				structured_content_json += "\"" + contents[i].properties[j].property_name + "\": " + GetPropertyValue(tool, contents[i].properties[j], false);
+				content_json += "\\\"" + content.properties[j].property_name + "\\\": " + GetPropertyValue(tool, content.properties[j], true);
+				structured_content_json += "\"" + content.properties[j].property_name + "\": " + GetPropertyValue(tool, content.properties[j], false);
 			}
-			content_json += "}\"";
-			content_json += "}";
-			structured_content_json += "}";
-		}
-		content_json = "],";
-		content_json += structured_content_json;
-		content_json += "]}}";
-	}
 
-	auto result = nlohmann::json::parse(content_json);
+			content_json += "}\"}";
+			result["content"].emplace_back(nlohmann::json::parse(content_json));
+
+			structured_content_json += "}";
+			structured_content["content"].emplace_back(nlohmann::json::parse(structured_content_json));
+		}
+
+		result["structuredContent"] = structured_content;
+	}
 
 	auto response = R"(
 		{
@@ -534,6 +477,47 @@ void McpServer::SendToolResponse(const std::string& session_id, const std::strin
 	if (is_finish)
 	{
 		m_request_id.erase(session_id);
+	}
+}
+
+std::string McpServer::GetPropertyType(PropertyType type)
+{
+	switch (type) {
+	case PROPERTY_NUMBER:
+		return "number";
+	case PROPERTY_TEXT:
+		return "text";
+	case PROPERTY_STRING:
+		return "string";
+	case PROPERTY_OBJECT:
+		return "object";
+	default:
+		return "unknown";
+	}
+}
+
+std::string McpServer::GetPropertyValue(const McpTool& tool, McpPropertyValue value, bool escape)
+{
+	auto it = tool.output_schema.find(value.property_name);
+	if (it == tool.output_schema.end())
+	{
+		return "";
+	}
+
+	switch (it->second.property_type) {
+	case PROPERTY_NUMBER:
+		return value.value;
+	case PROPERTY_STRING:
+		if (escape)
+		{
+			return "\\\"" + value.value + "\\\"";
+		}
+		else
+		{
+			return "\"" + value.value + "\"";
+		}
+	default:
+		return "";
 	}
 }
 

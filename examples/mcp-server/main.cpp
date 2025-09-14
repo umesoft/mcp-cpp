@@ -41,22 +41,32 @@ int main()
 		{
 			{ "location", McpServer::PROPERTY_STRING, "location", false }
 		},
-		std::vector<McpServer::McpProperty> {},
+		std::vector<McpServer::McpProperty> {
+			{ "date", McpServer::PROPERTY_STRING, "date", true },
+			{ "time", McpServer::PROPERTY_STRING, "time", true }
+		},
 		[&server](const std::string& session_id, const std::map<std::string, std::string>& args)
 		{
 			std::vector<McpServer::McpContent> contents;
 
-			char datetime_str[20];
+			char date_str[20];
+			char time_str[20];
 			time_t now = time(NULL);
     		struct tm* tm_info = localtime(&now);
-    		strftime(datetime_str, sizeof(datetime_str), "%Y/%m/%d %H:%M:%S", tm_info);
+			strftime(date_str, sizeof(date_str), "%Y/%m/%d", tm_info);
+			strftime(time_str, sizeof(time_str), "%H:%M:%S", tm_info);
 
-			McpServer::McpContent content
-			{
-				.property_type = McpServer::PROPERTY_TEXT,
-				.value = datetime_str,
-			};
-			contents.emplace_back(content);
+			McpServer::McpContent content;
+
+			content.properties.push_back({
+				.property_name = "date",
+				.value = date_str
+				});
+			content.properties.push_back({
+				.property_name = "time",
+				.value = time_str
+				});
+			contents.push_back(content);
 
 			server.SendToolResponse(session_id, "get_current_time", contents);
 		}
@@ -79,8 +89,6 @@ int main()
 				count_down_worker->join();
 			}
 
-			std::vector<McpServer::McpContent> contents;
-
 			int start_value = atoi(args.at("value").c_str());
 
 			count_down_worker = std::make_unique<std::thread>([&server, session_id, start_value]
@@ -100,11 +108,10 @@ int main()
 				}
 			});
 
-			McpServer::McpContent content
-			{
-				.property_type = McpServer::PROPERTY_TEXT,	
-				.value = "start!",
-			};
+			std::vector<McpServer::McpContent> contents;
+
+			McpServer::McpContent content;
+			content.value = "start!",
 			contents.emplace_back(content);
 
 			server.SendToolResponse(session_id, "count_down", contents, false);
@@ -147,11 +154,9 @@ int main()
 				}
 
 				std::vector<McpServer::McpContent> contents;
-				McpServer::McpContent content
-				{
-					.property_type = McpServer::PROPERTY_TEXT,
-					.value = "finish!",
-				};
+
+				McpServer::McpContent content;
+				content.value = "startfinish!",
 				contents.emplace_back(content);
 
 				server.SendToolResponse(session_id, "count_down", contents);
