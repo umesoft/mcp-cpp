@@ -113,26 +113,24 @@ int main()
 	);
 
 #ifdef USE_HTTP_TRANSPORT
-	McpHttpServerTransport* transport = new McpHttpServerTransport("localhost:8000", "/mcp");
+	McpHttpServerTransport transport("localhost:8000", "/mcp");
 
 #if 0
-	transport->SetTls(
+	transport.SetTls(
 		"cert.pem",
 		"key.pem"
 	);
 
-	transport->SetAuthorization(
+	transport.SetAuthorization(
 		"\"https://***tenant name***.us.auth0.com\"",
 		"\"***api permission***\""
 	);
 #endif
 #else
-	McpStdioServerTransport* transport = new McpStdioServerTransport();
+	McpStdioServerTransport transport;
 #endif
 
-	server.Run(transport);
+	server.Run(&transport);
 	
-	delete transport;
-
 	return 0;
 }
