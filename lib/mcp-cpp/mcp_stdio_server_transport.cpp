@@ -36,7 +36,7 @@ void McpStdioServerTransport::OnOpen()
 {
 	m_worker = std::thread([this]
 	{
-		while (1)
+		while (true)
 		{
 			if (fgets(m_request_buffer, m_max_request_size, stdin) == nullptr)
 			{
@@ -82,7 +82,7 @@ bool McpStdioServerTransport::OnProcRequest()
 	return true;
 }
 
-void McpStdioServerTransport::OnSendNotification(const std::string& /*session_id*/, const std::string& notification_str, bool /*is_finish*/)
+void McpStdioServerTransport::OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish)
 {
 	std::lock_guard<std::mutex> lock(m_send_mutex);
 	fprintf(stdout, "%s\n", notification_str.c_str());
