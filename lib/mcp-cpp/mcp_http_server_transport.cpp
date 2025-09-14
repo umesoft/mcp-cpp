@@ -60,20 +60,6 @@ void McpHttpServerTransport::SetTls(
 	}
 	}
 
-void McpHttpServerTransport::UpdateUrl()
-{
-	if (m_use_tls)
-	{
-		m_url = "https://";
-	}
-	else
-	{
-		m_url = "http://";
-	}
-	m_url += m_host;
-	m_url += m_entry_point;
-}
-
 void McpHttpServerTransport::SetAuthorization(const char* authorization_servers, const char* scopes_supported)
 	{
 	m_authorization_servers = authorization_servers;
@@ -110,6 +96,20 @@ void McpHttpServerTransport::OnOpen()
 		(mg_event_handler_t)cbEvHander,
 		this
 	);
+}
+
+void McpHttpServerTransport::UpdateUrl()
+{
+	if (m_use_tls)
+	{
+		m_url = "https://";
+	}
+	else
+	{
+		m_url = "http://";
+	}
+	m_url += m_host;
+	m_url += m_entry_point;
 }
 
 void McpHttpServerTransport::OnClose()
