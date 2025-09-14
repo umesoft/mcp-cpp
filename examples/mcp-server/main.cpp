@@ -17,7 +17,7 @@
 
 #include "mcp-cpp/mcp_server.h"
 
-// #define USE_HTTP_TRANSPORT
+#define USE_HTTP_TRANSPORT
 
 #ifdef USE_HTTP_TRANSPORT
 #include "mcp-cpp/mcp_http_server_transport.h"
@@ -37,11 +37,13 @@ int main()
 	server.AddTool(
 		"get_current_time",
 		"Get the current time at the specified location.",
-		std::vector<McpServer::McpProperty> {
+		std::vector<McpServer::McpProperty>
+		{
 			{ "location", McpServer::PROPERTY_STRING, "location", false }
 		},
 		std::vector<McpServer::McpProperty> {},
-		[](const std::map<std::string, std::string>& args) -> std::vector<McpServer::McpContent> {
+		[](const std::map<std::string, std::string>& args) -> std::vector<McpServer::McpContent>
+		{
 			std::vector<McpServer::McpContent> contents;
 
 			char datetime_str[20];
@@ -49,7 +51,8 @@ int main()
     		struct tm* tm_info = localtime(&now);
     		strftime(datetime_str, sizeof(datetime_str), "%Y/%m/%d %H:%M:%S", tm_info);
 
-			McpServer::McpContent content{
+			McpServer::McpContent content
+			{
 				.property_type = McpServer::PROPERTY_TEXT,
 				.value = datetime_str,
 			};
@@ -64,24 +67,24 @@ int main()
 	server.AddTool(
 		"count_down",
 		"Counts down from a specified value.",
-		std::vector<McpServer::McpProperty> {
+		std::vector<McpServer::McpProperty>
+		{
 			{ "value", McpServer::PROPERTY_STRING, "Start counting down from this value", true }
-	},
+		},
 		std::vector<McpServer::McpProperty> {},
-		[&server, &count_down_worker](const std::map<std::string, std::string>& args) -> std::vector<McpServer::McpContent> {
-			std::vector<McpServer::McpContent> contents;
-
-			std::string start_value_str = args.at("value");
-
+		[&server, &count_down_worker](const std::map<std::string, std::string>& args) -> std::vector<McpServer::McpContent>
+		{
 			if (count_down_worker && count_down_worker->joinable())
 			{
 				count_down_worker->join();
 			}
 
-			count_down_worker = std::make_unique<std::thread>([&server, start_value_str]
-			{
-				int start_value = atoi(start_value_str.c_str());
+			std::vector<McpServer::McpContent> contents;
 
+			int start_value = atoi(args.at("value").c_str());
+
+			count_down_worker = std::make_unique<std::thread>([&server, start_value]
+			{
 				for (int i = start_value; i >= 0; i--)
 				{
 					std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -91,14 +94,13 @@ int main()
 							"value": 0
 						}
 					)"_json;
-
 					params["value"] = i;
-
 					server.SendNotification("count_down", params);
 				}
 			});
 
-			McpServer::McpContent content{
+			McpServer::McpContent content
+			{
 				.property_type = McpServer::PROPERTY_TEXT,	
 				.value = "start!",
 			};
