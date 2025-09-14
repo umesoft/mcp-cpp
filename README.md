@@ -1,8 +1,8 @@
 # MCP Library for C
 
-## 1. Current Status
+## Current Status
 
-### (1) Server
+### Server
 
 The following features have been implemented:
 
@@ -14,16 +14,16 @@ The following features have been implemented:
   - Notification  
   - OutputSchema & structuredContent  
 
-### (2) Client
+### Client
 
 Not yet implemented.  
 Planned for future development.
 
-## 2. Build
+## Build
 
 Use cmake or vc.
 
-## 3. Used libraries
+## Used libraries
 
 - JWT++ (https://github.com/Thalhammer/jwt-cpp)
   includes PicoJSON.
