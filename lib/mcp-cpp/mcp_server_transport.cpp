@@ -47,9 +47,9 @@ bool McpServerTransport::ProcRequest()
 	return OnProcRequest();
 }
 
-void McpServerTransport::SendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish)
+void McpServerTransport::SendResponse(const std::string& session_id, const std::string& response_str, bool is_finish)
 {
-	OnSendNotification(session_id, notification_str, is_finish);
+	OnSendResponse(session_id, response_str, is_finish);
 }
 
 }

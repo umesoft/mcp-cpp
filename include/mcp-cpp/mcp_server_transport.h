@@ -27,7 +27,8 @@ public:
 	public:
 		virtual ~Handler() {}
 
-		virtual bool OnRecv(const std::string& session_id, const std::string& request_str, std::string& response_str, bool& is_prgress) = 0;
+		virtual void OnClose(const std::string& session_id) = 0;
+		virtual bool OnRecv(const std::string& session_id, const std::string& request_str) = 0;
 	};
 
 	McpServerTransport();
@@ -40,12 +41,12 @@ private:
 	void Open(Handler* handler);
 	void Close();
 	bool ProcRequest();
-	void SendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish);
+	void SendResponse(const std::string& session_id, const std::string& response_str, bool is_finish = true);
 
 	virtual void OnOpen() {};
 	virtual void OnClose() {};
 	virtual bool OnProcRequest() { return true; };
-	virtual void OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish) {};
+	virtual void OnSendResponse(const std::string& session_id, const std::string& response_str, bool is_finish) {};
 
 	friend class McpServer;
 };

@@ -45,7 +45,7 @@ private:
 	virtual void OnOpen();
 	virtual void OnClose();
 	virtual bool OnProcRequest();
-	virtual void OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish);
+	virtual void OnSendResponse(const std::string& session_id, const std::string& notification_str, bool is_finish);
 
 	std::string m_host;
 	std::string m_entry_point;
@@ -70,6 +70,7 @@ private:
 		void* connection;
 
 		std::queue<std::string> notifications;
+		bool notification_is_start;
 		bool notification_is_finish;
 	};
 

@@ -35,7 +35,7 @@ public:
 private:
 	virtual void OnOpen();
 	virtual bool OnProcRequest();
-	virtual void OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish);
+	virtual void OnSendResponse(const std::string& session_id, const std::string& response_str, bool is_finish);
 
 	int m_max_request_size;
 	char* m_request_buffer;

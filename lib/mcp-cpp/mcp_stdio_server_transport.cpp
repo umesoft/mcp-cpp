@@ -67,21 +67,16 @@ bool McpStdioServerTransport::OnProcRequest()
 	while (!m_request_queue.empty())
 	{
 		const std::string& request_str = m_request_queue.front();
-		std::string response_str;
-		bool is_progress = false;
-		if (m_handler->OnRecv("", request_str, response_str, is_progress))
-		{
-			WriteResponse(response_str);
-		}
+		m_handler->OnRecv("", request_str);
 		m_request_queue.pop();
 	}
 
 	return true;
 }
 
-void McpStdioServerTransport::OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish)
+void McpStdioServerTransport::OnSendResponse(const std::string& session_id, const std::string& response_str, bool is_finish)
 {
-	WriteResponse(notification_str);
+	WriteResponse(response_str);
 }
 
 void McpStdioServerTransport::WriteResponse(const std::string& notification_str)

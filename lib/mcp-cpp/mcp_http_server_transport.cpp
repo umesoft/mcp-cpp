@@ -259,34 +259,10 @@ void McpHttpServerTransport::cbEvHander(void* connection, int event_code, void* 
 						return;
 					}
 					session_info->connection = connection;
+					session_info->notification_is_start = false;
 
 					std::string request_str = std::string(hm->body.buf, hm->body.buf + hm->body.len);
-					std::string response_str;
-					bool is_progress = false;
-					if (self->m_handler->OnRecv(session_info->session_id, request_str, response_str, is_progress))
-					{
-						std::string headers =
-							"HTTP/1.1 200 OK\r\n"
-							"Transfer-Encoding: chunked\r\n"
-							"Content-Type: text/event-stream\r\nmcp-session-id: " + session_info->session_id + "\r\n"
-							"\r\n";
-						mg_printf(conn, headers.c_str());
-
-						while (!session_info->notifications.empty())
-						{
-							std::string& notification_str = session_info->notifications.front();
-							mg_http_printf_chunk(conn, "event: message\ndata: %s\n\n", notification_str.c_str());
-							session_info->notifications.pop();
-						}
-
-						mg_http_printf_chunk(conn, "event: message\ndata: %s\n\n", response_str.c_str());
-
-						if (!is_progress)
-						{
-							mg_http_write_chunk(conn, "", 0);
-						}
-					}
-					else
+					if (!self->m_handler->OnRecv(session_info->session_id, request_str))
 					{
 						std::string headers = "mcp-session-id: " + session_info->session_id + "\r\n";
 						mg_http_reply(conn, 202, headers.c_str(), "");
@@ -347,6 +323,18 @@ void McpHttpServerTransport::cbEvHander(void* connection, int event_code, void* 
 				mg_connection* target_conn = (mg_connection*)session_info.connection;
 				while (!session_info.notifications.empty())
 				{
+					if (!session_info.notification_is_start)
+					{
+						std::string headers =
+							"HTTP/1.1 200 OK\r\n"
+							"Transfer-Encoding: chunked\r\n"
+							"Content-Type: text/event-stream\r\nmcp-session-id: " + session_info.session_id + "\r\n"
+							"\r\n";
+						mg_printf(conn, headers.c_str());
+
+						session_info.notification_is_start = true;
+					}
+
 					std::string& notification_str = session_info.notifications.front();
 					mg_http_printf_chunk(target_conn, "event: message\ndata: %s\n\n", notification_str.c_str());
 					session_info.notifications.pop();
@@ -362,7 +350,7 @@ void McpHttpServerTransport::cbEvHander(void* connection, int event_code, void* 
 	}
 }
 
-void McpHttpServerTransport::OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish)
+void McpHttpServerTransport::OnSendResponse(const std::string& session_id, const std::string& notification_str, bool is_finish)
 {
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 

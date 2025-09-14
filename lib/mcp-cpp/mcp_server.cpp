@@ -35,7 +35,7 @@ void McpServer::AddTool(
 	const char* tool_description,
 	const std::vector<McpProperty>& input_schema,
 	const std::vector<McpProperty>& output_schema,
-	std::function <std::vector<McpContent>(const std::string& session_id, const std::map<std::string, std::string>& args, bool& is_progress)> callback
+	std::function <void(const std::string& session_id, const std::map<std::string, std::string>& args)> callback
 )
 {
 	McpTool tool;
@@ -73,10 +73,13 @@ bool McpServer::Run(McpServerTransport* transport)
 	return true;
 }
 
-bool McpServer::OnRecv(const std::string& session_id, const std::string& request_str, std::string& response_str, bool& is_prgress)
+void McpServer::OnClose(const std::string& session_id)
 {
-	nlohmann::json response;
+	m_request_id.erase(session_id);
+}
 
+bool McpServer::OnRecv(const std::string& session_id, const std::string& request_str)
+{
 	try
 	{
 		auto request = nlohmann::json::parse(request_str);
@@ -90,109 +93,56 @@ bool McpServer::OnRecv(const std::string& session_id, const std::string& request
 				return false;
 			}
 
-			if (method == "initialize")
+			if (request.contains("id"))
 			{
-				OnInitialize(request, response);
-			}
-			else if (method == "ping")
-			{
-				response = R"(
-					{
-						"jsonrpc": "2.0",
-						"id": null,
-						"result": {}
-					}
-				)"_json;
-			}
-			else if (method == "logging/setLevel")
-			{
-				OnLoggingSetLevel(request, response);
-			}
-			else if (method == "tools/list")
-			{
-				OnToolsList(request, response);
-			}
-			else if (method == "tools/call")
-			{
-				nlohmann::json result_or_error;
-				if (OnToolCall(session_id, request, result_or_error, is_prgress))
+				m_request_id[session_id] = request.at("id").get<int>();
+
+				if (method == "initialize")
 				{
-					response = R"(
-						{
-							"jsonrpc": "2.0",
-							"id": null,
-							"result": {}
-						}
-					)"_json;
-					response["result"] = result_or_error;
+					OnInitialize(session_id, request);
+				}
+				else if (method == "logging/setLevel")
+				{
+					OnLoggingSetLevel(session_id, request);
+				}
+				else if (method == "ping")
+				{
+					OnPing(session_id, request);
+				}
+				else if (method == "tools/list")
+				{
+					OnToolsList(session_id, request);
+				}
+				else if (method == "tools/call")
+				{
+					OnToolCall(session_id, request);
 				}
 				else
 				{
-					response = R"(
-						{
-							"jsonrpc": "2.0",
-							"id": null,
-							"error": {}
-						}
-					)"_json;
-					response["error"] = result_or_error;
+					SendError(session_id, -32601, "Method not found");
 				}
 			}
 			else
 			{
-				response = R"(
-					{
-						"jsonrpc": "2.0",
-						"id": null,
-						"error": {
-							"code": -32601,
-							"message": "Method not found"
-						}
-					}
-				)"_json;
+				SendError(session_id, -32600, "Invalid request");
 			}
 		}
 		else
 		{
-			response = R"(
-				{
-					"jsonrpc": "2.0",
-					"id": null,
-					"error": {
-						"code": -32600,
-						"message": "Invalid request"
-					}
-				}
-			)"_json;
-		}
-
-		if (request.contains("id"))
-		{
-			response["id"] = request.at("id").get<int>();
+			SendError(session_id, -32600, "Invalid request");
 		}
 	}
 	catch (const nlohmann::json::parse_error& e)
 	{
-		response = R"(
-			{
-				"jsonrpc": "2.0",
-				"id": null,
-				"error": {
-					"code": -32700,
-					"message": "Parse error"
-				}
-			}
-		)"_json;
+		SendError(session_id, -32700, "Parse error");
 	}
-
-	response_str = response.dump();
 
 	return true;
 }
 
-void McpServer::OnInitialize(const nlohmann::json& request, nlohmann::json& response)
+void McpServer::OnInitialize(const std::string& session_id, const nlohmann::json& request)
 {
-	response = R"(
+	auto response = R"(
 		{
 			"jsonrpc": "2.0",
 			"id": 0,
@@ -210,30 +160,54 @@ void McpServer::OnInitialize(const nlohmann::json& request, nlohmann::json& resp
 		}
 	)"_json;
 
+	response["id"] = request.at("id").get<int>();
 	response["result"]["serverInfo"]["name"] = m_server_name;
 	response["result"]["serverInfo"]["version"] = m_version;
+
+	SendResponse(session_id, response);
 }
 
-void McpServer::OnLoggingSetLevel(const nlohmann::json& request, nlohmann::json& response)
+void McpServer::OnLoggingSetLevel(const std::string& session_id, const nlohmann::json& request)
 {
-	response = R"(
+	auto response = R"(
 		{
 			"jsonrpc": "2.0",
 			"id": 0,
 			"result": {}
 		}
 	)"_json;
+
+	response["id"] = request.at("id").get<int>();
+
+	SendResponse(session_id, response);
 }
 
-void McpServer::OnToolsList(const nlohmann::json& request, nlohmann::json& response)
+void McpServer::OnPing(const std::string& session_id, const nlohmann::json& request)
 {
-	response = R"(
+	auto response = R"(
+		{
+			"jsonrpc": "2.0",
+			"id": null,
+			"result": {}
+		}
+	)"_json;
+
+	response["id"] = request.at("id").get<int>();
+
+	SendResponse(session_id, response);
+}
+
+void McpServer::OnToolsList(const std::string& session_id, const nlohmann::json& request)
+{
+	auto response = R"(
 		{
 			"jsonrpc": "2.0",
 			"id": 0,
 			"result": {}
 		}
 	)"_json;
+
+	response["id"] = request.at("id").get<int>();
 
 	std::string tools_json = "";
 	for (auto it = m_tools.begin(); it != m_tools.end(); it++)
@@ -341,22 +315,19 @@ void McpServer::OnToolsList(const nlohmann::json& request, nlohmann::json& respo
 	tools_json += "]}";
 
 	response["result"] = nlohmann::json::parse(tools_json);
+
+	SendResponse(session_id, response);
 }
 
-bool McpServer::OnToolCall(const std::string& session_id, const nlohmann::json& request, nlohmann::json& response, bool& is_progress)
+void McpServer::OnToolCall(const std::string& session_id, const nlohmann::json& request)
 {
 	std::string name = request["params"]["name"];
 
 	auto it = m_tools.find(name);
 	if (it == m_tools.end())
 	{
-		response = R"(
-			{
-				"code": -32602,
-				"message": "Unknown tool: invalid_tool_name"
-			}
-		)"_json;
-		return false;
+		SendError(session_id, -32602, "Unknown tool: invalid_tool_name");
+		return;
 	}
 
 	auto raequestArguments = request["params"]["arguments"];
@@ -379,17 +350,114 @@ bool McpServer::OnToolCall(const std::string& session_id, const nlohmann::json& 
 
 		if (prop.required && arguments[prop.property_name].empty())
 		{
-			response = R"(
-				{
-					"code": -32602,
-					"message": "Invalid_param: missing_required_params"
-				}
-			)"_json;
-			return false;
+			SendError(session_id, -32602, "Unknown tool: missing_required_params");
+			return;
 		}
 	}
 
-	std::vector<McpContent> contents = tool.callback(session_id, arguments, is_progress);
+	tool.callback(session_id, arguments);
+}
+
+std::string McpServer::GetPropertyType(PropertyType type)
+{
+	switch (type) {
+	case PROPERTY_NUMBER:
+		return "number";
+	case PROPERTY_TEXT:
+		return "text";
+	case PROPERTY_STRING:
+		return "string";
+	case PROPERTY_OBJECT:
+		return "object";
+	default:
+		return "unknown";
+	}
+}
+
+std::string McpServer::GetPropertyValue(const McpTool& tool, McpPropertyValue value, bool escape)
+{
+	auto it = tool.output_schema.find(value.property_name);
+	if (it == tool.output_schema.end())
+	{
+		return "";
+	}
+
+	switch (it->second.property_type) {
+	case PROPERTY_NUMBER:
+		return value.value;
+	case PROPERTY_STRING:
+		if (escape)
+		{
+			return "\\\"" + value.value + "\\\"";
+		}
+		else
+		{
+			return "\"" + value.value + "\"";
+		}
+	default:
+		return "";
+	}
+}
+
+void McpServer::SendResponse(const std::string& session_id, const nlohmann::json& response)
+{
+	m_transport->SendResponse(session_id, response.dump());
+
+	m_request_id.erase(session_id);
+}
+
+void McpServer::SendError(const std::string& session_id, int code, const std::string& message)
+{
+	auto response = R"(
+		{
+			"jsonrpc": "2.0",
+			"id": null,
+			"error": {
+				"code": -32600,
+				"message": "Invalid request"
+			}
+		}
+	)"_json;
+
+	auto it = m_request_id.find(session_id);
+	if (it != m_request_id.end())
+	{
+		response["id"] = it->second;
+	}
+
+	response["error"]["code"] = code;
+	response["error"]["message"] = message;
+
+	m_transport->SendResponse(session_id, response.dump());
+
+	m_request_id.erase(session_id);
+}
+
+void McpServer::SendToolNotification(const std::string& session_id, const std::string& method, const nlohmann::json& params, bool is_finish)
+{
+	auto notification = R"(
+		{
+			"jsonrpc": "2.0",
+			"method": "",
+			"params": {}
+		}
+	)"_json;
+
+	notification["method"] = "notifications/" + method;
+	notification["params"] = params;
+
+	m_transport->SendResponse(session_id, notification.dump(), is_finish);
+}
+
+void McpServer::SendToolResponse(const std::string& session_id, const std::string& method, std::vector<McpContent> contents, bool is_finish)
+{
+	auto it2 = m_tools.find(method);
+	if (it2 == m_tools.end())
+	{
+		return;
+	}
+	McpTool& tool = it2->second;
+
 	std::string content_json = "";
 	std::string structured_content_json = "";
 
@@ -444,66 +512,29 @@ bool McpServer::OnToolCall(const std::string& session_id, const nlohmann::json& 
 		content_json += "]}}";
 	}
 
-	response = nlohmann::json::parse(content_json);
+	auto result = nlohmann::json::parse(content_json);
 
-	return true;
-}
-
-std::string McpServer::GetPropertyType(PropertyType type)
-{
-	switch (type) {
-	case PROPERTY_NUMBER:
-		return "number";
-	case PROPERTY_TEXT:
-		return "text";
-	case PROPERTY_STRING:
-		return "string";
-	case PROPERTY_OBJECT:
-		return "object";
-	default:
-		return "unknown";
-	}
-}
-
-std::string McpServer::GetPropertyValue(const McpTool& tool, McpPropertyValue value, bool escape)
-{
-	auto it = tool.output_schema.find(value.property_name);
-	if (it == tool.output_schema.end())
-	{
-		return "";
-	}
-
-	switch (it->second.property_type) {
-	case PROPERTY_NUMBER:
-		return value.value;
-	case PROPERTY_STRING:
-		if (escape)
-		{
-			return "\\\"" + value.value + "\\\"";
-		}
-		else
-		{
-			return "\"" + value.value + "\"";
-		}
-	default:
-		return "";
-	}
-}
-
-void McpServer::SendNotification(const std::string& session_id, const std::string& method, const nlohmann::json& params, bool is_finish)
-{
-	auto notification = R"(
+	auto response = R"(
 		{
 			"jsonrpc": "2.0",
-			"method": "",
-			"params": {}
+			"id": null,
+			"result": {}
 		}
 	)"_json;
 
-	notification["method"] = "notifications/" + method;
-	notification["params"] = params;
+	auto it = m_request_id.find(session_id);
+	if (it != m_request_id.end())
+	{
+		response["id"] = it->second;
+	}
+	response["result"] = result;
 
-	m_transport->SendNotification(session_id, notification.dump(), is_finish);
+	m_transport->SendResponse(session_id, response.dump(), is_finish);
+
+	if (is_finish)
+	{
+		m_request_id.erase(session_id);
+	}
 }
 
 }

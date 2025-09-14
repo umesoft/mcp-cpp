@@ -42,7 +42,7 @@ int main()
 			{ "location", McpServer::PROPERTY_STRING, "location", false }
 		},
 		std::vector<McpServer::McpProperty> {},
-		[](const std::string& session_id, const std::map<std::string, std::string>& args, bool& is_progress) -> std::vector<McpServer::McpContent>
+		[&server](const std::string& session_id, const std::map<std::string, std::string>& args)
 		{
 			std::vector<McpServer::McpContent> contents;
 
@@ -56,9 +56,9 @@ int main()
 				.property_type = McpServer::PROPERTY_TEXT,
 				.value = datetime_str,
 			};
-			contents.push_back(content);
+			contents.emplace_back(content);
 
-			return contents;
+			server.SendToolResponse(session_id, "get_current_time", contents);
 		}
 	);
 
@@ -72,7 +72,7 @@ int main()
 			{ "value", McpServer::PROPERTY_STRING, "Start counting down from this value", true }
 		},
 		std::vector<McpServer::McpProperty> {},
-		[&server, &count_down_worker](const std::string& session_id, const std::map<std::string, std::string>& args, bool& is_progress) -> std::vector<McpServer::McpContent>
+		[&server, &count_down_worker](const std::string& session_id, const std::map<std::string, std::string>& args)
 		{
 			if (count_down_worker && count_down_worker->joinable())
 			{
@@ -95,7 +95,8 @@ int main()
 						}
 					)"_json;
 					params["value"] = i;
-					server.SendNotification(session_id, "count_down", params, i == 0);
+
+					server.SendToolNotification(session_id, "count_down", params, i == 0);
 				}
 			});
 
@@ -104,11 +105,57 @@ int main()
 				.property_type = McpServer::PROPERTY_TEXT,	
 				.value = "start!",
 			};
-			contents.push_back(content);
+			contents.emplace_back(content);
 
-			is_progress = true;
+			server.SendToolResponse(session_id, "count_down", contents, false);
+		}
+	);
 
-			return contents;
+	std::unique_ptr<std::thread> count_down2_worker;
+
+	server.AddTool(
+		"count_down2",
+		"Counts down from a specified value.(Type2)",
+		std::vector<McpServer::McpProperty>
+	{
+		{ "value", McpServer::PROPERTY_STRING, "Start counting down from this value", true }
+	},
+		std::vector<McpServer::McpProperty> {},
+		[&server, &count_down2_worker](const std::string& session_id, const std::map<std::string, std::string>& args)
+		{
+			if (count_down2_worker && count_down2_worker->joinable())
+			{
+				count_down2_worker->join();
+			}
+
+			int start_value = atoi(args.at("value").c_str());
+
+			count_down2_worker = std::make_unique<std::thread>([&server, session_id, start_value]
+			{
+				for (int i = start_value; i > 0; i--)
+				{
+					auto params = R"(
+						{
+							"value": 0
+						}
+					)"_json;
+					params["value"] = i;
+
+					server.SendToolNotification(session_id, "count_down", params, false);
+
+					std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+				}
+
+				std::vector<McpServer::McpContent> contents;
+				McpServer::McpContent content
+				{
+					.property_type = McpServer::PROPERTY_TEXT,
+					.value = "finish!",
+				};
+				contents.emplace_back(content);
+
+				server.SendToolResponse(session_id, "count_down", contents);
+			});
 		}
 	);
 
