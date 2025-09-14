@@ -1,4 +1,4 @@
-# MCP Library for C++
+# C++ Library for  Model Context Protocol (MCP)
 
 ## Current Status
 
