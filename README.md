@@ -8,7 +8,7 @@ The following features have been implemented:
 
 - **Lifecycle** (Initialize ～ Shutdown)  
 - **Transport** (stdio & Streamable HTTP)  
-- **Authorization** (Verified with Auth0)  
+- **Authorization** (Tested with Auth0)  
 - **Utilities** (Ping)  
 - **Tools**  
   - Notification  
