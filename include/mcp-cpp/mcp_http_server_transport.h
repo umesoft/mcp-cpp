@@ -42,11 +42,6 @@ public:
 	);
 
 private:
-	virtual void OnOpen();
-	virtual void OnClose();
-	virtual bool OnProcRequest();
-	virtual void OnSendResponse(const std::string& session_id, const std::string& notification_str, bool is_finish);
-
 	std::string m_host;
 	std::string m_entry_point;
 	unsigned long long m_session_timeout;
@@ -55,13 +50,25 @@ private:
 	std::string m_cert_file;
 	std::string m_key_file;
 
+	bool m_use_authorization;
+	std::string m_authorization_servers;
+	std::string m_scopes_supported;
+
+	virtual void OnOpen();
+	virtual void OnClose();
+
 	std::string m_url;
 
 	void UpdateUrl();
 
-	bool m_use_authorization;
-	std::string m_authorization_servers;
-	std::string m_scopes_supported;
+	virtual bool OnProcRequest();
+	virtual void OnSendResponse(const std::string& session_id, const std::string& notification_str, bool is_finish);
+
+	void* m_mgr;
+	void* m_timer;
+
+	static void cbEvHander(void* connection, int event_code, void* event_data);
+	static void cbTimerHandler(void* timer_data);
 
 	struct SessionInfo {
 		std::string session_id;
@@ -81,12 +88,6 @@ private:
 	SessionInfo* FindSession(std::string session_id);
 	void EraseSession(std::string session_id);
 	void ClearSession();
-
-	void* m_mgr;
-	void* m_timer;
-
-	static void cbEvHander(void* connection, int event_code, void* event_data);
-	static void cbTimerHandler(void* timer_data);
 };
 
 }

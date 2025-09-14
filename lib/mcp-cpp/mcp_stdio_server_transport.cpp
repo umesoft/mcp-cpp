@@ -76,13 +76,7 @@ bool McpStdioServerTransport::OnProcRequest()
 
 void McpStdioServerTransport::OnSendResponse(const std::string& session_id, const std::string& response_str, bool is_finish)
 {
-	WriteResponse(response_str);
-}
-
-void McpStdioServerTransport::WriteResponse(const std::string& notification_str)
-{
-	std::lock_guard<std::mutex> lock(m_response_mutex);
-	fprintf(stdout, "%s\n", notification_str.c_str());
+	fprintf(stdout, "%s\n", response_str.c_str());
 	fflush(stdout);
 }
 

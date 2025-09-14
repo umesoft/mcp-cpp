@@ -33,10 +33,6 @@ public:
 	virtual ~McpStdioServerTransport();
 
 private:
-	virtual void OnOpen();
-	virtual bool OnProcRequest();
-	virtual void OnSendResponse(const std::string& session_id, const std::string& response_str, bool is_finish);
-
 	int m_max_request_size;
 	char* m_request_buffer;
 
@@ -45,9 +41,9 @@ private:
 	std::mutex m_request_mutex;
 	std::condition_variable m_request_cv;
 
-	std::mutex m_response_mutex;
-
-	void WriteResponse(const std::string& notification_str);
+	virtual void OnOpen();
+	virtual bool OnProcRequest();
+	virtual void OnSendResponse(const std::string& session_id, const std::string& response_str, bool is_finish);
 };
 
 }
