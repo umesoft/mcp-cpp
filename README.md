@@ -1,4 +1,4 @@
-# MCP Library for C
+# MCP Library for C++
 
 ## Current Status
 
