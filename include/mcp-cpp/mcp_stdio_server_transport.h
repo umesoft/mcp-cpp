@@ -38,13 +38,17 @@ protected:
 	virtual void OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish);
 
 private:
-	std::queue<std::string> m_queue;
-	std::mutex m_mutex;
-	std::condition_variable m_cv;
-	std::thread m_worker;
 	int m_max_request_size;
 	char* m_request_buffer;
-	std::mutex m_send_mutex;
+
+	std::thread m_request_worker;
+	std::queue<std::string> m_request_queue;
+	std::mutex m_request_mutex;
+	std::condition_variable m_request_cv;
+
+	std::mutex m_response_mutex;
+
+	void WriteResponse(const std::string& notification_str);
 };
 
 }

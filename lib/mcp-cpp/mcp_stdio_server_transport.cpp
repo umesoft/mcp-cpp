@@ -34,7 +34,7 @@ McpStdioServerTransport::~McpStdioServerTransport()
 
 void McpStdioServerTransport::OnOpen()
 {
-	m_worker = std::thread([this]
+	m_request_worker = std::thread([this]
 	{
 		while (true)
 		{
@@ -47,10 +47,10 @@ void McpStdioServerTransport::OnOpen()
 			if (m_request_buffer[pos - 1] == '\n')
 			{
 				{
-					std::lock_guard<std::mutex> lock(m_mutex);
-					m_queue.push(m_request_buffer);
+					std::lock_guard<std::mutex> lock(m_request_mutex);
+					m_request_queue.push(m_request_buffer);
 				}
-				m_cv.notify_one();
+				m_request_cv.notify_one();
 			}
 		}
 	});
@@ -58,25 +58,22 @@ void McpStdioServerTransport::OnOpen()
 
 bool McpStdioServerTransport::OnProcRequest()
 {
-	std::unique_lock<std::mutex> lock(m_mutex);
-	if (m_cv.wait_for(lock, std::chrono::milliseconds(100)) == std::cv_status::timeout) 
+	std::unique_lock<std::mutex> lock(m_request_mutex);
+	if (m_request_cv.wait_for(lock, std::chrono::milliseconds(100)) == std::cv_status::timeout)
 	{
 		return true;
 	}
 
-	while (!m_queue.empty())
+	while (!m_request_queue.empty())
 	{
-		const std::string& request_str = m_queue.front();
+		const std::string& request_str = m_request_queue.front();
 		std::string response_str;
 		bool is_progress = false;
 		if (m_handler->OnRecv("", request_str, response_str, is_progress))
 		{
-			std::lock_guard<std::mutex> lock(m_send_mutex);
-			fprintf(stdout, "%s\n", response_str.c_str());
-			fflush(stdout);
+			WriteResponse(response_str);
 		}
-
-		m_queue.pop();
+		m_request_queue.pop();
 	}
 
 	return true;
@@ -84,7 +81,12 @@ bool McpStdioServerTransport::OnProcRequest()
 
 void McpStdioServerTransport::OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish)
 {
-	std::lock_guard<std::mutex> lock(m_send_mutex);
+	WriteResponse(notification_str);
+}
+
+void McpStdioServerTransport::WriteResponse(const std::string& notification_str)
+{
+	std::lock_guard<std::mutex> lock(m_response_mutex);
 	fprintf(stdout, "%s\n", notification_str.c_str());
 	fflush(stdout);
 }
