@@ -46,6 +46,7 @@ public:
 private:
 	std::string m_host;
 	std::string m_entry_point;
+	unsigned long long m_session_timeout;
 
 	bool m_use_tls;
 	std::string m_cert_file;
@@ -58,8 +59,6 @@ private:
 	bool m_use_authorization;
 	std::string m_authorization_servers;
 	std::string m_scopes_supported;
-
-	unsigned long long m_session_timeout;
 
 	std::map<std::string, long> m_sessions;
 

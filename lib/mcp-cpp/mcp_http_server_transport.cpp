@@ -30,14 +30,12 @@ typedef void (*mg_timer_handler_t)(void*);
 McpHttpServerTransport::McpHttpServerTransport(const std::string& host, const std::string& entry_point, unsigned long long session_timeout)
 	: m_host(host)
 	, m_entry_point(entry_point)
+	, m_session_timeout(session_timeout)
 	, m_use_tls(false)
 	, m_use_authorization(false)
-	, m_session_timeout(session_timeout)
-
 	, m_mgr(nullptr)
 	, m_timer(nullptr)
 {
-	UpdateUrl();
 }
 
 McpHttpServerTransport::~McpHttpServerTransport()
@@ -60,8 +58,6 @@ void McpHttpServerTransport::SetTls(
 	{
 		m_use_tls = false;
 	}
-
-	UpdateUrl();
 	}
 
 void McpHttpServerTransport::UpdateUrl()
@@ -95,6 +91,8 @@ void McpHttpServerTransport::SetAuthorization(const char* authorization_servers,
 
 void McpHttpServerTransport::OnOpen()
 {
+	UpdateUrl();
+
 	mg_mgr* s_mgr = nullptr;
 	s_mgr = new mg_mgr();
 	mg_mgr_init(s_mgr);
