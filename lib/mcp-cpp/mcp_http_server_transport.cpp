@@ -27,20 +27,17 @@ namespace Mcp {
 
 typedef void (*mg_timer_handler_t)(void*);
 
-McpHttpServerTransport::McpHttpServerTransport()
-	: m_use_tls(false)
-	, m_cert_file()
-	, m_key_file()
+McpHttpServerTransport::McpHttpServerTransport(const std::string& host, const std::string& entry_point, unsigned long long session_timeout)
+	: m_host(host)
+	, m_entry_point(entry_point)
+	, m_use_tls(false)
 	, m_use_authorization(false)
-	, m_authorization_servers()
-	, m_scopes_supported()
-	, m_url()
-	, m_host()
-	, m_entry_point()
-	, m_sessions()
+	, m_session_timeout(session_timeout)
+
 	, m_mgr(nullptr)
 	, m_timer(nullptr)
 {
+	UpdateUrl();
 }
 
 McpHttpServerTransport::~McpHttpServerTransport()
@@ -63,10 +60,26 @@ void McpHttpServerTransport::SetTls(
 	{
 		m_use_tls = false;
 	}
+
+	UpdateUrl();
+	}
+
+void McpHttpServerTransport::UpdateUrl()
+{
+	if (m_use_tls)
+	{
+		m_url = "https://";
+	}
+	else
+	{
+		m_url = "http://";
+	}
+	m_url += m_host;
+	m_url += m_entry_point;
 }
 
 void McpHttpServerTransport::SetAuthorization(const char* authorization_servers, const char* scopes_supported)
-{
+	{
 	m_authorization_servers = authorization_servers;
 	m_scopes_supported = scopes_supported;
 
@@ -78,33 +91,6 @@ void McpHttpServerTransport::SetAuthorization(const char* authorization_servers,
 	{
 		m_use_authorization = false;
 	}
-}
-
-void McpHttpServerTransport::SetEntryPoint(const std::string& url, unsigned long long session_timeout)
-{
-	if (m_use_tls)
-	{
-		m_url = "https://";
-	}
-	else
-	{
-		m_url = "http://";
-	}
-	m_url += url;
-
-	std::string::size_type pos = url.find('/');
-	if (pos == std::string::npos)
-	{
-		m_host = url;
-		m_entry_point = "/";
-	}
-	else
-	{
-		m_host = url.substr(0, pos);
-		m_entry_point = url.substr(pos);
-	}
-
-	m_session_timeout = session_timeout;
 }
 
 void McpHttpServerTransport::OnOpen()

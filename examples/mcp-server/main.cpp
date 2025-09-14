@@ -111,7 +111,7 @@ int main()
 	);
 
 #ifdef USE_HTTP_TRANSPORT
-	McpHttpServerTransport* transport = new McpHttpServerTransport();
+	McpHttpServerTransport* transport = new McpHttpServerTransport("localhost:8000", "/mcp");
 
 #if 0
 	transport->SetTls(
@@ -124,11 +124,6 @@ int main()
 		"\"***api permission***\""
 	);
 #endif
-
-	transport->SetEntryPoint(
-		"localhost:8000/mcp",
-		10 * 60 * 1000
-	);
 #else
 	McpStdioServerTransport* transport = new McpStdioServerTransport();
 #endif

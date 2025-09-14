@@ -27,7 +27,7 @@ namespace Mcp {
 
 class McpHttpServerTransport : public McpServerTransport {
 public:
-	McpHttpServerTransport();
+	McpHttpServerTransport(const std::string& host, const std::string& entry_point, unsigned long long session_timeout = 10 * 60 * 1000);
 	virtual ~McpHttpServerTransport();
 
 	void SetTls(
@@ -39,23 +39,25 @@ public:
 		const char* scopes_supported
 	);
 
-	void SetEntryPoint(const std::string& url, unsigned long long session_timeout);
-
 	virtual void OnOpen();
 	virtual void OnClose();
-
 	virtual bool OnProcRequest();
 
 private:
+	std::string m_host;
+	std::string m_entry_point;
+
 	bool m_use_tls;
 	std::string m_cert_file;
 	std::string m_key_file;
+
+	std::string m_url;
+
+	void UpdateUrl();
+
 	bool m_use_authorization;
 	std::string m_authorization_servers;
 	std::string m_scopes_supported;
-	std::string m_url;
-	std::string m_host;
-	std::string m_entry_point;
 
 	unsigned long long m_session_timeout;
 
