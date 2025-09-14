@@ -26,6 +26,7 @@
 #endif
 
 #include <time.h>
+#include <thread>
 
 using namespace Mcp;
 
@@ -58,6 +59,8 @@ int main()
 		}
 	);
 
+	std::unique_ptr<std::thread> count_down_worker;
+
 	server.AddTool(
 		"count_down",
 		"Counts down from a specified value.",
@@ -65,29 +68,39 @@ int main()
 			{ "value", McpServer::PROPERTY_STRING, "Start counting down from this value", true }
 	},
 		std::vector<McpServer::McpProperty> {},
-		[&server](const std::map<std::string, std::string>& args) -> std::vector<McpServer::McpContent> {
+		[&server, &count_down_worker](const std::map<std::string, std::string>& args) -> std::vector<McpServer::McpContent> {
 			std::vector<McpServer::McpContent> contents;
 
 			std::string start_value_str = args.at("value");
 
-			int start_value = atoi(start_value_str.c_str());
-
-			for (int i = start_value; i > 0; i--)
+			if (count_down_worker && count_down_worker->joinable())
 			{
-				auto params = R"(
-					{
-						"value": 0
-					}
-				)"_json;
-
-				params["value"] = i;
-
-				server.SendNotification("count_down", params);
+				count_down_worker->join();
 			}
+
+			count_down_worker = std::make_unique<std::thread>([&server, start_value_str]
+			{
+				int start_value = atoi(start_value_str.c_str());
+
+				for (int i = start_value; i >= 0; i--)
+				{
+					std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+					auto params = R"(
+						{
+							"value": 0
+						}
+					)"_json;
+
+					params["value"] = i;
+
+					server.SendNotification("count_down", params);
+				}
+			});
 
 			McpServer::McpContent content{
 				.property_type = McpServer::PROPERTY_TEXT,	
-				.value = "finish!",
+				.value = "start!",
 			};
 			contents.push_back(content);
 

@@ -496,9 +496,7 @@ void McpServer::SendNotification(const std::string& method, const nlohmann::json
 		{
 			"jsonrpc": "2.0",
 			"method": "",
-			"params": {
-				"value": 0
-			}
+			"params": {}
 		}
 	)"_json;
 
