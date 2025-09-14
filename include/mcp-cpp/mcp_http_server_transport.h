@@ -41,12 +41,12 @@ public:
 		const char* scopes_supported
 	);
 
+private:
 	virtual void OnOpen();
 	virtual void OnClose();
 	virtual bool OnProcRequest();
 	virtual void OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish);
 
-private:
 	std::string m_host;
 	std::string m_entry_point;
 	unsigned long long m_session_timeout;

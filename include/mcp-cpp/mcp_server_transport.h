@@ -30,23 +30,24 @@ public:
 		virtual bool OnRecv(const std::string& session_id, const std::string& request_str, std::string& response_str, bool& is_prgress) = 0;
 	};
 
-public:
 	McpServerTransport();
 	virtual ~McpServerTransport();
 
-	void Open(Handler* handler);
-	void Close();
-
-	bool ProcRequest();
-	void SendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish);
-
 protected:
 	Handler* m_handler;
+
+private:
+	void Open(Handler* handler);
+	void Close();
+	bool ProcRequest();
+	void SendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish);
 
 	virtual void OnOpen() {};
 	virtual void OnClose() {};
 	virtual bool OnProcRequest() { return true; };
 	virtual void OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish) {};
+
+	friend class McpServer;
 };
 
 }

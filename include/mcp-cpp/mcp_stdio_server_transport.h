@@ -32,12 +32,11 @@ public:
 	McpStdioServerTransport(int max_request_size = 128 * 1024);
 	virtual ~McpStdioServerTransport();
 
-protected:
+private:
 	virtual void OnOpen();
 	virtual bool OnProcRequest();
 	virtual void OnSendNotification(const std::string& session_id, const std::string& notification_str, bool is_finish);
 
-private:
 	int m_max_request_size;
 	char* m_request_buffer;
 
