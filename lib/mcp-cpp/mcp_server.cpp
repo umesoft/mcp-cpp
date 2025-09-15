@@ -375,7 +375,7 @@ void McpServer::SendError(const std::string& session_id, int code, const std::st
 	m_request_id.erase(session_id);
 }
 
-void McpServer::SendToolNotification(const std::string& session_id, const std::string& method, const nlohmann::json& params, bool is_finish)
+void McpServer::SendToolNotification(const std::string& session_id, const std::string& method, const nlohmann::json& params)
 {
 	auto notification = R"(
 		{
@@ -388,10 +388,10 @@ void McpServer::SendToolNotification(const std::string& session_id, const std::s
 	notification["method"] = "notifications/" + method;
 	notification["params"] = params;
 
-	m_transport->SendResponse(session_id, notification.dump(), is_finish);
+	m_transport->SendResponse(session_id, notification.dump(), false);
 }
 
-void McpServer::SendToolResponse(const std::string& session_id, const std::string& method, std::vector<McpContent> contents, bool is_finish)
+void McpServer::SendToolResponse(const std::string& session_id, const std::string& method, std::vector<McpContent> contents)
 {
 	auto it2 = m_tools.find(method);
 	if (it2 == m_tools.end())
@@ -473,12 +473,9 @@ void McpServer::SendToolResponse(const std::string& session_id, const std::strin
 		response["result"]["structuredContent"] = structured_content;
 	}
 
-	m_transport->SendResponse(session_id, response.dump(), is_finish);
+	m_transport->SendResponse(session_id, response.dump(), true);
 
-	if (is_finish)
-	{
-		m_request_id.erase(session_id);
-	}
+	m_request_id.erase(session_id);
 }
 
 std::string McpServer::GetPropertyType(PropertyType type)

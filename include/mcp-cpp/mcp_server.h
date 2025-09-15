@@ -63,8 +63,8 @@ public:
 
 	void SendResponse(const std::string& session_id, const nlohmann::json& response);
 	void SendError(const std::string& session_id, int code, const std::string& message);
-	void SendToolNotification(const std::string& session_id, const std::string& method, const nlohmann::json& params, bool is_finish = true);
-	void SendToolResponse(const std::string& session_id, const std::string& method, std::vector<McpContent> contents, bool is_finish = true);
+	void SendToolNotification(const std::string& session_id, const std::string& method, const nlohmann::json& params);
+	void SendToolResponse(const std::string& session_id, const std::string& method, std::vector<McpContent> contents);
 
 protected:
 	virtual void OnClose(const std::string& session_id);
