@@ -70,8 +70,8 @@ std::vector<std::string> split_naive(const std::string& s, char delim)
 
 void test()
 {
-    std::string headerData;
-    std::string responseData;
+    std::string headerData = "";
+    std::string responseData = "";
 
     CURL* curl = curl_easy_init();
 
@@ -137,6 +137,9 @@ void test()
     headers = NULL;
 
     //---------------------------------
+
+    headerData = "";
+    responseData = "";
 
     headers = curl_slist_append(headers, "Content-Type: application/json");
     headers = curl_slist_append(headers, session_id.c_str());
