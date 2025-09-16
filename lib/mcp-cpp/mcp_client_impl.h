@@ -17,12 +17,13 @@
 
 #pragma once
 
-#include "mcp-cpp/McpClient.h"
+#include "mcp-cpp/mcp_client.h"
 
 namespace Mcp {
 
 class McpClientImpl : public McpClient {
 public:
+    McpClientImpl();
 	virtual ~McpClientImpl();
 
 	virtual bool Initialize(std::shared_ptr<McpClientTransport> m_transport);
@@ -30,9 +31,6 @@ public:
 
 	virtual bool ToolsList(std::vector<McpTool>& tools);
     virtual bool ToolsCall(std::string name, const std::map<std::string, std::string>& args);
-
-protected:
-    McpClientImpl();
 };
 
 }
