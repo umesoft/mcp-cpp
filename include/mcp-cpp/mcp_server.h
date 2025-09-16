@@ -40,7 +40,7 @@ public:
 		std::function <void(const std::string& session_id, const std::map<std::string, std::string>& args)> callback
 		) = 0;
 
-	virtual bool Run(std::shared_ptr<McpServerTransport> transport) = 0;
+	virtual bool Run(std::unique_ptr<McpServerTransport> transport) = 0;
 
 	virtual void SendResponse(const std::string& session_id, const nlohmann::json& response) = 0;
 	virtual void SendError(const std::string& session_id, int code, const std::string& message) = 0;

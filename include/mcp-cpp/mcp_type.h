@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 namespace Mcp {
 
 enum McpPropertyType {
@@ -31,5 +34,7 @@ struct McpPropertyValue {
 struct McpContent {
 	std::vector<McpPropertyValue> properties;
 };
+
+const std::vector<McpContent> CreateSimpleContent(const std::string& value);
 
 }

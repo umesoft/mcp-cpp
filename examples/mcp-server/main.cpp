@@ -32,7 +32,7 @@ using namespace Mcp;
 
 int main()
 {
-	std::unique_ptr<McpServer> server = McpServer::CreateInstance("MCP Test", "1.0.0.0");
+	auto server = McpServer::CreateInstance("MCP Test", "1.0.0.0");
 
 	server->AddTool(
 		{
@@ -50,27 +50,32 @@ int main()
 		},
 		[&server](const std::string& session_id, const std::map<std::string, std::string>& args)
 		{
-			std::vector<McpContent> contents;
-
-			char date_str[20];
-			char time_str[20];
 			time_t now = time(NULL);
     		struct tm* tm_info = localtime(&now);
+
+			char date_str[20];
 			strftime(date_str, sizeof(date_str), "%Y/%m/%d", tm_info);
+			char time_str[20];
 			strftime(time_str, sizeof(time_str), "%H:%M:%S", tm_info);
 
-			McpContent content;
-			content.properties.push_back({
-				.property_name = "date",
-				.value = date_str
-				});
-			content.properties.push_back({
-				.property_name = "time",
-				.value = time_str
-				});
-			contents.emplace_back(content);
-
-			server->SendToolResponse(session_id, "get_current_time", contents);
+			server->SendToolResponse(
+				session_id, 
+				"get_current_time", 
+				{
+					{
+						{
+							{
+								.property_name = "date",
+								.value = date_str
+							},
+							{
+								.property_name = "time",
+								.value = time_str
+							},
+						}
+					}
+				}
+			);
 		}
 	);
 
@@ -110,21 +115,17 @@ int main()
 					std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 				}
 
-				std::vector<McpContent> contents;
-
-				McpContent content;
-				content.properties.push_back({
-					.value = "finish!"
-					});
-				contents.emplace_back(content);
-
-				server->SendToolResponse(session_id, "count_down", contents);
+				server->SendToolResponse(
+					session_id,
+					"count_down",
+					CreateSimpleContent("finish!")
+				);
 			});
 		}
 	);
 
 #ifdef USE_HTTP_TRANSPORT
-	std::shared_ptr<McpHttpServerTransport> transport = std::move(McpHttpServerTransport::CreateInstance("localhost:8000", "/mcp"));
+	auto transport = McpHttpServerTransport::CreateInstance("localhost:8000", "/mcp");
 
 #if 0
 	transport->SetTls(
@@ -138,10 +139,10 @@ int main()
 	);
 #endif
 #else
-	std::shared_ptr<McpStdioServerTransport> transport = std::move(McpStdioServerTransport::CreateInstance());
+	auto transport = McpStdioServerTransport::CreateInstance();
 #endif
 
-	server->Run(transport);
+	server->Run(std::move(transport));
 
 	return 0;
 }
