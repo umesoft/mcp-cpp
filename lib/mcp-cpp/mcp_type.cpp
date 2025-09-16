@@ -1,5 +1,3 @@
-#pragma once
-
 #include "mcp-cpp/mcp_type.h"
 
 namespace Mcp {
