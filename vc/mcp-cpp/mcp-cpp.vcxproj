@@ -22,6 +22,9 @@
     <ClCompile Include="..\..\lib\mcp-cpp\platform\platform_win32.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\mcp-cpp\mcp_client.h" />
+    <ClInclude Include="..\..\include\mcp-cpp\mcp_client_transport.h" />
+    <ClInclude Include="..\..\include\mcp-cpp\mcp_http_client_transport.h" />
     <ClInclude Include="..\..\include\mcp-cpp\mcp_server.h" />
     <ClInclude Include="..\..\include\mcp-cpp\mcp_http_server_transport.h" />
     <ClInclude Include="..\..\include\mcp-cpp\mcp_server_transport.h" />
@@ -33,6 +36,9 @@
     <ClInclude Include="..\..\lib\mcp-cpp\mcp_server_impl.h" />
     <ClInclude Include="..\..\lib\mcp-cpp\mcp_stdio_server_transport_impl.h" />
     <ClInclude Include="..\..\lib\mcp-cpp\platform\platform.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -114,5 +120,13 @@
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\libcurl-v143-shared.8.4.0\build\native\libcurl-v143-shared.targets" Condition="Exists('..\packages\libcurl-v143-shared.8.4.0\build\native\libcurl-v143-shared.targets')" />
+  </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>このプロジェクトは、このコンピューター上にない NuGet パッケージを参照しています。それらのパッケージをダウンロードするには、[NuGet パッケージの復元] を使用します。詳細については、http://go.microsoft.com/fwlink/?LinkID=322105 を参照してください。見つからないファイルは {0} です。</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\libcurl-v143-shared.8.4.0\build\native\libcurl-v143-shared.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\libcurl-v143-shared.8.4.0\build\native\libcurl-v143-shared.targets'))" />
+  </Target>
 </Project>

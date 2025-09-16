@@ -14,12 +14,12 @@
     <ClCompile Include="..\..\examples\mcp-client\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\mcp-cpp\mcp-cpp.vcxproj">
       <Project>{c26507c5-e66c-4ed4-a171-8fd51d5199b5}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

@@ -29,7 +29,7 @@ namespace Mcp {
 
 class McpClient {
 public:
-	static std::unique_ptr<McpClient> CreateInstance();
+	static std::unique_ptr<McpClient> CreateInstance(const std::string& name, const std::string& version);
 
 	virtual ~McpClient() {}
 

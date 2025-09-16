@@ -19,12 +19,38 @@
 
 #include "mcp-cpp/mcp_http_client_transport.h"
 
+#include "curl/curl.h"
+
+#include <memory>
+#include <string>
+
 namespace Mcp {
 
 class McpHttpClientTransportImpl : public McpHttpClientTransport {
 public:
-	McpHttpClientTransportImpl();
+	McpHttpClientTransportImpl(const std::string& host, const std::string& entry_point);
 	virtual ~McpHttpClientTransportImpl();
+
+	virtual bool Initialize(const std::string& request);
+	virtual void Shutdown();
+	virtual bool SendRequest(const std::string& request, std::string& response);
+
+private:
+	std::string m_host;
+	std::string m_entry_point;
+	std::string m_url;
+
+	CURL* m_curl;
+
+	std::map<std::string, std::string> m_headers;
+	std::string m_header_buffer;
+	std::string m_response;
+	std::string m_response_buffer;
+
+	std::string m_session_id;
+
+	static size_t HeaderCallback(char* ptr, size_t size, size_t nmemb, void* userdata);
+	static size_t WriteCallback(char* ptr, size_t size, size_t nmemb, void* userdata);
 };
 
 }

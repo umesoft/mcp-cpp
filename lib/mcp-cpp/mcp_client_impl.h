@@ -19,18 +19,28 @@
 
 #include "mcp-cpp/mcp_client.h"
 
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
 namespace Mcp {
 
 class McpClientImpl : public McpClient {
 public:
-    McpClientImpl();
+    McpClientImpl(const std::string& name, const std::string& version);
 	virtual ~McpClientImpl();
 
-	virtual bool Initialize(std::shared_ptr<McpClientTransport> m_transport);
+	virtual bool Initialize(std::shared_ptr<McpClientTransport> transport);
 	virtual void Shutdown();
 
 	virtual bool ToolsList(std::vector<McpTool>& tools);
     virtual bool ToolsCall(std::string name, const std::map<std::string, std::string>& args);
+
+private:
+	std::string m_name;
+	std::string m_version;
+	std::shared_ptr<McpClientTransport> m_transport;
 };
 
 }

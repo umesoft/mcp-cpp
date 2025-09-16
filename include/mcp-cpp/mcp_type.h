@@ -6,15 +6,19 @@
 namespace Mcp {
 
 enum McpPropertyType {
-	MCP_PROPERTY_TYPE_NUMBER = 1,
+	MCP_PROPERTY_TYPE_UNKNOWN = -1,
+	MCP_PROPERTY_TYPE_NUMBER = 0,
 	MCP_PROPERTY_TYPE_TEXT,
 	MCP_PROPERTY_TYPE_STRING,
 	MCP_PROPERTY_TYPE_OBJECT
 };
 
+std::string McpPropertyTypeToString(McpPropertyType type);
+McpPropertyType StringToMcpPropertyType(const std::string& type);
+
 struct McpProperty {
-	std::string property_name;
-	McpPropertyType property_type;
+	std::string name;
+	McpPropertyType type;
 	std::string description;
 	bool required;
 };
@@ -27,7 +31,7 @@ struct McpTool {
 };
 
 struct McpPropertyValue {
-	std::string property_name;
+	std::string name;
 	std::string value;
 };
 

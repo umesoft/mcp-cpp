@@ -42,11 +42,11 @@ void McpServerImpl::AddTool(
 	tool_info.description = tool.description;
 	for (auto it = tool.input_schema.begin(); it != tool.input_schema.end(); it++)
 	{
-		tool_info.input_schema[it->property_name] = *it;
+		tool_info.input_schema[it->name] = *it;
 	}
 	for (auto it = tool.output_schema.begin(); it != tool.output_schema.end(); it++)
 	{
-		tool_info.output_schema[it->property_name] = *it;
+		tool_info.output_schema[it->name] = *it;
 	}
 	tool_info.callback = callback;
 	m_tools[tool.name] = tool_info;
@@ -241,13 +241,13 @@ void McpServerImpl::OnToolsList(const std::string& session_id, const nlohmann::j
 				)"_json;
 
 				const auto& prop = it->second;
-				property_record["type"] = GetPropertyType(prop.property_type);
+				property_record["type"] = McpPropertyTypeToString(prop.type);
 				property_record["description"] = prop.description;
-				tool_record["inputSchema"]["properties"][prop.property_name] = property_record;
+				tool_record["inputSchema"]["properties"][prop.name] = property_record;
 
 				if (prop.required)
 				{
-					tool_record["inputSchema"]["required"].emplace_back(prop.property_name);
+					tool_record["inputSchema"]["required"].emplace_back(prop.name);
 				}
 			}
 		}
@@ -282,13 +282,13 @@ void McpServerImpl::OnToolsList(const std::string& session_id, const nlohmann::j
 				)"_json;
 
 				const auto& prop = it->second;
-				property_record["type"] = GetPropertyType(prop.property_type);
+				property_record["type"] = McpPropertyTypeToString(prop.type);
 				property_record["description"] = prop.description;
-				output_schema["properties"]["content"]["items"]["properties"][prop.property_name] = property_record;
+				output_schema["properties"]["content"]["items"]["properties"][prop.name] = property_record;
 
 				if (prop.required)
 				{
-					output_schema["properties"]["content"]["items"]["required"].emplace_back(prop.property_name);
+					output_schema["properties"]["content"]["items"]["required"].emplace_back(prop.name);
 				}
 			}
 
@@ -321,16 +321,16 @@ void McpServerImpl::OnToolCall(const std::string& session_id, const nlohmann::js
 	{
 		const auto& prop = it2->second;
 
-		if (raequestArguments.contains(prop.property_name))
+		if (raequestArguments.contains(prop.name))
 		{
-			arguments[prop.property_name] = raequestArguments.at(prop.property_name);
+			arguments[prop.name] = raequestArguments.at(prop.name);
 		}
 		else
 		{
-			arguments[prop.property_name] = "";
+			arguments[prop.name] = "";
 		}
 
-		if (prop.required && arguments[prop.property_name].empty())
+		if (prop.required && arguments[prop.name].empty())
 		{
 			SendError(session_id, -32602, "Unknown tool: missing_required_params");
 			return;
@@ -458,8 +458,8 @@ void McpServerImpl::SendToolResponse(const std::string& session_id, const std::s
 					content_json += ",";
 					structured_content_json += ",";
 				}
-				content_json += "\\\"" + content.properties[j].property_name + "\\\": " + GetPropertyValue(tool_info.output_schema, content.properties[j], true);
-				structured_content_json += "\"" + content.properties[j].property_name + "\": " + GetPropertyValue(tool_info.output_schema, content.properties[j], false);
+				content_json += "\\\"" + content.properties[j].name + "\\\": " + GetPropertyValue(tool_info.output_schema, content.properties[j], true);
+				structured_content_json += "\"" + content.properties[j].name + "\": " + GetPropertyValue(tool_info.output_schema, content.properties[j], false);
 			}
 
 			content_json += "}\"}";
@@ -477,31 +477,15 @@ void McpServerImpl::SendToolResponse(const std::string& session_id, const std::s
 	m_request_id.erase(session_id);
 }
 
-std::string McpServerImpl::GetPropertyType(McpPropertyType type)
-{
-	switch (type) {
-	case MCP_PROPERTY_TYPE_NUMBER:
-		return "number";
-	case MCP_PROPERTY_TYPE_TEXT:
-		return "text";
-	case MCP_PROPERTY_TYPE_STRING:
-		return "string";
-	case MCP_PROPERTY_TYPE_OBJECT:
-		return "object";
-	default:
-		return "unknown";
-	}
-}
-
 std::string McpServerImpl::GetPropertyValue(const std::map<std::string, McpProperty>& output_schema, McpPropertyValue value, bool escape)
 {
-	auto it = output_schema.find(value.property_name);
+	auto it = output_schema.find(value.name);
 	if (it == output_schema.end())
 	{
 		return "";
 	}
 
-	switch (it->second.property_type) {
+	switch (it->second.type) {
 	case MCP_PROPERTY_TYPE_NUMBER:
 		return value.value;
 	case MCP_PROPERTY_TYPE_STRING:

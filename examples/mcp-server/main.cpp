@@ -32,7 +32,7 @@ using namespace Mcp;
 
 int main()
 {
-	auto server = McpServer::CreateInstance("MCP Test", "1.0.0.0");
+	auto server = McpServer::CreateInstance("MCP Test Server", "1.0.0.0");
 
 	server->AddTool(
 		{
@@ -65,11 +65,11 @@ int main()
 					{
 						{
 							{
-								.property_name = "date",
+								.name = "date",
 								.value = date_str
 							},
 							{
-								.property_name = "time",
+								.name = "time",
 								.value = time_str
 							},
 						}

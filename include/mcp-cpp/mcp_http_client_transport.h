@@ -19,14 +19,16 @@
 
 #include "mcp_client_transport.h"
 
+#include <string>
+
 namespace Mcp {
 
 class McpHttpClientTransport : public McpClientTransport {
 public:
-	static std::unique_ptr<McpHttpClientTransport> CreateInstance();
+	static std::unique_ptr<McpHttpClientTransport> CreateInstance(const std::string& host, const std::string& entry_point);
 	
 	virtual ~McpHttpClientTransport() {}
-	
+
 protected:
 	McpHttpClientTransport() {}
 };

@@ -1,3 +1,4 @@
+find_package(CURL REQUIRED)
 find_package(OpenSSL REQUIRED)
 
 find_package(PkgConfig REQUIRED)
@@ -19,4 +20,4 @@ add_library(mcp-cpp STATIC
 
 target_include_directories(mcp-cpp PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
-target_link_libraries(mcp-cpp PRIVATE ssl crypto PkgConfig::uuid)
+target_link_libraries(mcp-cpp PRIVATE ssl crypto PkgConfig::uuid ${CURL_LIBRARIES})

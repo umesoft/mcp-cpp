@@ -70,7 +70,6 @@ private:
 	void OnToolsList(const std::string& session_id, const nlohmann::json& request);
 	void OnToolCall(const std::string& session_id, const nlohmann::json& request);
 
-	static std::string GetPropertyType(McpPropertyType type);
 	static std::string GetPropertyValue(const std::map<std::string, McpProperty>& output_schema, McpPropertyValue type, bool escape);
 };
 
