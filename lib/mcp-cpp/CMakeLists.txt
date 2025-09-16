@@ -11,7 +11,7 @@ add_library(mcp-cpp STATIC
     mcp_http_server_transport_impl.cpp
     mcp_stdio_server_transport_impl.cpp
     mcp_server_impl.cpp
-    mcp_client.cpp
+    mcp_client_impl.cpp
 )
 
 target_include_directories(mcp-cpp PUBLIC ${PROJECT_SOURCE_DIR}/include)
