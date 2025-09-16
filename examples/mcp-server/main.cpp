@@ -120,7 +120,7 @@ int main()
 	);
 
 #ifdef USE_HTTP_TRANSPORT
-	std::shared_ptr<McpHttpServerTransport> transport = std::move(McpHttpServerTransport::CreateInstance("localhost:8000", "/mcp"));
+	std::unique_ptr<McpHttpServerTransport> transport = McpHttpServerTransport::CreateInstance("localhost:8000", "/mcp");
 
 #if 0
 	transport->SetTls(
@@ -134,10 +134,10 @@ int main()
 	);
 #endif
 #else
-	std::shared_ptr<McpStdioServerTransport> transport = std::move(McpStdioServerTransport::CreateInstance());
+	std::unique_ptr<McpStdioServerTransport> transport = McpStdioServerTransport::CreateInstance();
 #endif
 
-	server.Run(transport);
+	server.Run(std::move(transport));
 
 	return 0;
 }

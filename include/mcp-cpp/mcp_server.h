@@ -59,7 +59,7 @@ public:
 		std::function <void(const std::string& session_id, const std::map<std::string, std::string>& args)> callback
 		);
 
-	bool Run(std::shared_ptr<McpServerTransport> transport);
+	bool Run(std::unique_ptr<McpServerTransport> transport);
 
 	void SendResponse(const std::string& session_id, const nlohmann::json& response);
 	void SendError(const std::string& session_id, int code, const std::string& message);
@@ -83,7 +83,7 @@ private:
 	};
 	std::map<std::string, McpTool> m_tools;
 
-	std::shared_ptr<McpServerTransport> m_transport;
+	std::unique_ptr<McpServerTransport> m_transport;
 
 	std::map<std::string, int> m_request_id;
 
