@@ -39,7 +39,7 @@
     <ClCompile Include="..\..\lib\mcp-cpp\mcp_stdio_server_transport_impl.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libmcp-cpp\mcp_type.cpp">
+    <ClCompile Include="..\..\lib\mcp-cpp\mcp_type.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
