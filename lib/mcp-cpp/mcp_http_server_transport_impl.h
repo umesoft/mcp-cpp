@@ -19,10 +19,10 @@
 
 #include "mcp-cpp/mcp_http_server_transport.h"
 
-#include <functional>
 #include <map>
 #include <mutex>
 #include <queue>
+#include <string>
 #include <vector>
 
 namespace Mcp {
@@ -33,12 +33,12 @@ public:
 	virtual ~McpHttpServerTransportImpl();
 
 	virtual void SetTls(
-		const char* cert_file,
-		const char* key_file
+		const std::string& cert_file,
+		const std::string& key_file
 	);
 	virtual void SetAuthorization(
-		const char* authorization_servers,
-		const char* scopes_supported
+		const std::string& authorization_servers,
+		const std::string& scopes_supported
 	);
 
 private:

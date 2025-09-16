@@ -18,10 +18,10 @@
 #define NOMINMAX
 #include "platform/platform.h"
 
+#include "mongoose.c"
+
 #include "mcp_http_server_transport_impl.h"
 #include "jwt-cpp/jwt.h"
-
-#include "mongoose.c"
 
 namespace Mcp {
 
@@ -47,10 +47,7 @@ McpHttpServerTransportImpl::~McpHttpServerTransportImpl()
 {
 }
 
-void McpHttpServerTransportImpl::SetTls(
-	const char* cert_file,
-	const char* key_file
-)
+void McpHttpServerTransportImpl::SetTls(const std::string& cert_file, const std::string& key_file)
 {
 	m_cert_file = cert_file;
 	m_key_file = key_file;
@@ -65,7 +62,7 @@ void McpHttpServerTransportImpl::SetTls(
 	}
 }
 
-void McpHttpServerTransportImpl::SetAuthorization(const char* authorization_servers, const char* scopes_supported)
+void McpHttpServerTransportImpl::SetAuthorization(const std::string& authorization_servers, const std::string& scopes_supported)
 {
 	m_authorization_servers = authorization_servers;
 	m_scopes_supported = scopes_supported;

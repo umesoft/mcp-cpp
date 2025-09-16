@@ -19,9 +19,11 @@
 
 #include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "mcp_type.h"
 #include "mcp_server_transport.h"
 
 namespace Mcp {
@@ -29,72 +31,24 @@ namespace Mcp {
 class McpServer : public McpServerTransport::Handler
 {
 public:
-	McpServer(const char* server_name, const char* version);
+	static std::unique_ptr<McpServer> CreateInstance(const std::string& server_name, const std::string& version);
 
-	enum PropertyType {
-		PROPERTY_NUMBER = 1,
-		PROPERTY_TEXT,
-		PROPERTY_STRING,
-		PROPERTY_OBJECT
-	};
-	struct McpProperty {
-		std::string property_name;
-		PropertyType property_type;
-		std::string description;
-		bool required;
-	};
-	struct McpPropertyValue {
-		std::string property_name;
-		std::string value;
-	};
-	struct McpContent {
-		std::vector<McpPropertyValue> properties;
-	};
+	virtual ~McpServer() {}
 
-	void AddTool(
-		const char* tool_name, 
-		const char* tool_description, 
-		const std::vector<McpProperty>& input_schema,
-		const std::vector<McpProperty>& output_schema,
+	virtual void AddTool(
+		const McpTool& tool,
 		std::function <void(const std::string& session_id, const std::map<std::string, std::string>& args)> callback
-		);
+		) = 0;
 
-	bool Run(std::unique_ptr<McpServerTransport> transport);
+	virtual bool Run(std::shared_ptr<McpServerTransport> transport) = 0;
 
-	void SendResponse(const std::string& session_id, const nlohmann::json& response);
-	void SendError(const std::string& session_id, int code, const std::string& message);
-	void SendToolNotification(const std::string& session_id, const std::string& method, const nlohmann::json& params);
-	void SendToolResponse(const std::string& session_id, const std::string& method, std::vector<McpContent> contents);
+	virtual void SendResponse(const std::string& session_id, const nlohmann::json& response) = 0;
+	virtual void SendError(const std::string& session_id, int code, const std::string& message) = 0;
+	virtual void SendToolNotification(const std::string& session_id, const std::string& method, const nlohmann::json& params) = 0;
+	virtual void SendToolResponse(const std::string& session_id, const std::string& method, std::vector<McpContent> contents) = 0;
 
 protected:
-	virtual void OnClose(const std::string& session_id);
-	virtual bool OnRecv(const std::string& session_id, const std::string& request_str);
-
-private:
-	std::string m_server_name;
-	std::string m_version;
-
-	struct McpTool {
-		std::string name;
-		std::string description;
-		std::map<std::string, McpProperty> input_schema;
-		std::map<std::string, McpProperty> output_schema;
-		std::function <void(const std::string& session_id, const std::map<std::string, std::string>& args)> callback;
-	};
-	std::map<std::string, McpTool> m_tools;
-
-	std::unique_ptr<McpServerTransport> m_transport;
-
-	std::map<std::string, int> m_request_id;
-
-	void OnInitialize(const std::string& session_id, const nlohmann::json& request);
-	void OnLoggingSetLevel(const std::string& session_id, const nlohmann::json& request);
-	void OnPing(const std::string& session_id, const nlohmann::json& request);
-	void OnToolsList(const std::string& session_id, const nlohmann::json& request);
-	void OnToolCall(const std::string& session_id, const nlohmann::json& request);
-
-	static std::string GetPropertyType(PropertyType type);
-	static std::string GetPropertyValue(const McpTool& tool, McpPropertyValue type, bool escape);
+	McpServer() {}
 };
 
 }

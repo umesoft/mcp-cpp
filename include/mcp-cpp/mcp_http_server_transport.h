@@ -20,6 +20,7 @@
 #include "mcp_server_transport.h"
 
 #include <memory>
+#include <string>
 
 namespace Mcp {
 
@@ -28,12 +29,12 @@ public:
 	static std::unique_ptr<McpHttpServerTransport> CreateInstance(const std::string& host, const std::string& entry_point, unsigned long long session_timeout = 10 * 60 * 1000);
 
 	virtual void SetTls(
-		const char* cert_file,
-		const char* key_file
+		const std::string& cert_file,
+		const std::string& key_file
 	) = 0;
 	virtual void SetAuthorization(
-		const char* authorization_servers,
-		const char* scopes_supported
+		const std::string& authorization_servers,
+		const std::string& scopes_supported
 	) = 0;
 
 	virtual ~McpHttpServerTransport() {}

@@ -32,22 +32,25 @@ using namespace Mcp;
 
 int main()
 {
-	McpServer server("MCP Test", "1.0.0.0");
+	std::unique_ptr<McpServer> server = McpServer::CreateInstance("MCP Test", "1.0.0.0");
 
-	server.AddTool(
-		"get_current_time",
-		"Get the current time at the specified location.",
-		std::vector<McpServer::McpProperty>
+	server->AddTool(
 		{
-			{ "location", McpServer::PROPERTY_STRING, "location", false }
-		},
-		std::vector<McpServer::McpProperty> {
-			{ "date", McpServer::PROPERTY_STRING, "date", true },
-			{ "time", McpServer::PROPERTY_STRING, "time", true }
+			.name = "get_current_time",
+			.description = "Get the current time at the specified location.",
+			.input_schema = std::vector<McpProperty>
+				{
+					{ "location", MCP_PROPERTY_TYPE_STRING, "location", false }
+				},
+			.output_schema = std::vector<McpProperty>
+				{
+					{ "date", MCP_PROPERTY_TYPE_STRING, "date", true },
+					{ "time", MCP_PROPERTY_TYPE_STRING, "time", true }
+				}
 		},
 		[&server](const std::string& session_id, const std::map<std::string, std::string>& args)
 		{
-			std::vector<McpServer::McpContent> contents;
+			std::vector<McpContent> contents;
 
 			char date_str[20];
 			char time_str[20];
@@ -56,7 +59,7 @@ int main()
 			strftime(date_str, sizeof(date_str), "%Y/%m/%d", tm_info);
 			strftime(time_str, sizeof(time_str), "%H:%M:%S", tm_info);
 
-			McpServer::McpContent content;
+			McpContent content;
 			content.properties.push_back({
 				.property_name = "date",
 				.value = date_str
@@ -65,22 +68,23 @@ int main()
 				.property_name = "time",
 				.value = time_str
 				});
-			contents.push_back(content);
+			contents.emplace_back(content);
 
-			server.SendToolResponse(session_id, "get_current_time", contents);
+			server->SendToolResponse(session_id, "get_current_time", contents);
 		}
 	);
 
 	std::unique_ptr<std::thread> count_down_worker;
 
-	server.AddTool(
-		"count_down",
-		"Counts down from a specified value.",
-		std::vector<McpServer::McpProperty>
-	{
-		{ "value", McpServer::PROPERTY_STRING, "Start counting down from this value", true }
-	},
-		std::vector<McpServer::McpProperty> {},
+	server->AddTool(
+		{
+			.name = "count_down",
+			.description = "Counts down from a specified value.",
+			.input_schema = std::vector<McpProperty>
+				{
+					{ "value", MCP_PROPERTY_TYPE_STRING, "Start counting down from this value", true }
+				}
+		},
 		[&server, &count_down_worker](const std::string& session_id, const std::map<std::string, std::string>& args)
 		{
 			if (count_down_worker && count_down_worker->joinable())
@@ -101,26 +105,26 @@ int main()
 					)"_json;
 					params["value"] = i;
 
-					server.SendToolNotification(session_id, "count_down", params);
+					server->SendToolNotification(session_id, "count_down", params);
 
 					std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 				}
 
-				std::vector<McpServer::McpContent> contents;
+				std::vector<McpContent> contents;
 
-				McpServer::McpContent content;
+				McpContent content;
 				content.properties.push_back({
 					.value = "finish!"
 					});
 				contents.emplace_back(content);
 
-				server.SendToolResponse(session_id, "count_down", contents);
+				server->SendToolResponse(session_id, "count_down", contents);
 			});
 		}
 	);
 
 #ifdef USE_HTTP_TRANSPORT
-	std::unique_ptr<McpHttpServerTransport> transport = McpHttpServerTransport::CreateInstance("localhost:8000", "/mcp");
+	std::shared_ptr<McpHttpServerTransport> transport = std::move(McpHttpServerTransport::CreateInstance("localhost:8000", "/mcp"));
 
 #if 0
 	transport->SetTls(
@@ -134,10 +138,10 @@ int main()
 	);
 #endif
 #else
-	std::unique_ptr<McpStdioServerTransport> transport = McpStdioServerTransport::CreateInstance();
+	std::shared_ptr<McpStdioServerTransport> transport = std::move(McpStdioServerTransport::CreateInstance());
 #endif
 
-	server.Run(std::move(transport));
+	server->Run(transport);
 
 	return 0;
 }
