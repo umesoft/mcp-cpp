@@ -23,7 +23,12 @@ namespace Mcp {
 
 class McpHttpClientTransport : public McpClientTransport {
 public:
+	static std::unique_ptr<McpHttpClientTransport> CreateInstance();
+	
 	virtual ~McpHttpClientTransport() {}
+	
+protected:
+	McpHttpClientTransport() {}
 };
 
 }

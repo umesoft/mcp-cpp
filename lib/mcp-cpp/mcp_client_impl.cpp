@@ -11,6 +11,10 @@ McpClientImpl::McpClientImpl()
 {
 }
 
+McpClientImpl::~McpClientImpl()
+{
+}
+
 bool McpClientImpl::Initialize(std::shared_ptr<McpClientTransport> m_transport)
 {
 	return true;

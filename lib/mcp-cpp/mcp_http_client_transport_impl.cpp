@@ -15,32 +15,21 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "mcp_type.h"
-#include "mcp_client_transport.h"
+#include "mcp_http_client_transport_impl.h"
 
 namespace Mcp {
 
-class McpClient {
-public:
-	static std::unique_ptr<McpClient> CreateInstance();
+std::unique_ptr<McpHttpClientTransport> McpHttpClientTransport::CreateInstance()
+{
+	return std::make_unique<McpHttpClientTransportImpl>();
+}
 
-	virtual ~McpClient() {}
+McpHttpClientTransportImpl::McpHttpClientTransportImpl()
+{
+}
 
-	virtual bool Initialize(std::shared_ptr<McpClientTransport> m_transport) = 0;
-	virtual void Shutdown() = 0;
-
-	virtual bool ToolsList(std::vector<McpTool>& tools) = 0;
-    virtual bool ToolsCall(std::string name, const std::map<std::string, std::string>& args) = 0;
-
-protected:
-	McpClient() {};
-};
+McpHttpClientTransportImpl::~McpHttpClientTransportImpl()
+{
+}
 
 }

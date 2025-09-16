@@ -1,4 +1,23 @@
+/*
+ *  Copyright (C) 2025 UmeSoftware LLC
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "mcp-cpp/mcp_client.h"
+#include "mcp-cpp/mcp_http_client_transport.h"
+
 #include "openai-cpp/openai.hpp"
 #include "nlohmann/json.hpp"
 #include "curl/curl.h"
@@ -6,6 +25,8 @@
 
 #include <string>
 #include <vector>
+
+using namespace Mcp;
 
 size_t HeaderCallback(char* ptr, size_t size, size_t nmemb, std::string* headerData)
 {
@@ -184,11 +205,12 @@ void test()
 
 int main()
 {
-    /*
-    Mcp::McpClient client;
-    client.Test();
-    */
-
+	std::shared_ptr<McpHttpClientTransport> transport = std::move(McpHttpClientTransport::CreateInstance());
+	
+    auto client = McpClient::CreateInstance();
+	client->Initialize(transport);
+	
+	
     /*
     openai::start("", "", true, "http://127.0.0.1:1234/v1/");
 
@@ -201,7 +223,6 @@ int main()
     std::cout << "Response is:\n" << chat.dump(2) << '\n'; 
     */
 
-    test();
 
     return 0;
 }
