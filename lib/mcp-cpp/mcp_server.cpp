@@ -53,7 +53,7 @@ void McpServer::AddTool(
 	m_tools[tool_name] = tool;
 }
 
-bool McpServer::Run(McpServerTransport* transport)
+bool McpServer::Run(std::shared_ptr<McpServerTransport> transport)
 {
 	m_transport = transport;
 
@@ -68,7 +68,7 @@ bool McpServer::Run(McpServerTransport* transport)
 	}
 
 	m_transport->Close();
-	m_transport = nullptr;
+	m_transport.reset();
 
 	return true;
 }

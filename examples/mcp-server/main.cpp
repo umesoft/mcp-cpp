@@ -120,24 +120,24 @@ int main()
 	);
 
 #ifdef USE_HTTP_TRANSPORT
-	McpHttpServerTransport transport("localhost:8000", "/mcp");
+	std::shared_ptr<McpHttpServerTransport> transport = std::move(McpHttpServerTransport::CreateInstance("localhost:8000", "/mcp"));
 
 #if 0
-	transport.SetTls(
+	transport->SetTls(
 		"cert.pem",
 		"key.pem"
 	);
 
-	transport.SetAuthorization(
+	transport->SetAuthorization(
 		"\"https://***tenant name***.us.auth0.com\"",
 		"\"***api permission***\""
 	);
 #endif
 #else
-	McpStdioServerTransport transport;
+	std::shared_ptr<McpStdioServerTransport> transport = std::move(McpStdioServerTransport::CreateInstance());
 #endif
 
-	server.Run(&transport);
-	
+	server.Run(transport);
+
 	return 0;
 }

@@ -31,11 +31,12 @@ public:
 		virtual bool OnRecv(const std::string& session_id, const std::string& request_str) = 0;
 	};
 
-	McpServerTransport();
 	virtual ~McpServerTransport();
 
 protected:
 	Handler* m_handler;
+
+	McpServerTransport();
 
 private:
 	void Open(Handler* handler);

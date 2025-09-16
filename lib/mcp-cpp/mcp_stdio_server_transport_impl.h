@@ -17,20 +17,33 @@
 
 #pragma once
 
-#include "mcp_server_transport.h"
+#include "mcp-cpp/mcp_stdio_server_transport.h"
 
-#include <memory>
+#include <condition_variable>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <thread>
 
 namespace Mcp {
 
-class McpStdioServerTransport : public McpServerTransport {
+class McpStdioServerTransportImpl : public McpStdioServerTransport {
 public:
-	static  std::unique_ptr<McpStdioServerTransport> CreateInstance(int max_request_size = 128 * 1024);
+	McpStdioServerTransportImpl(int max_request_size);
+	virtual ~McpStdioServerTransportImpl();
 
-	virtual ~McpStdioServerTransport() {}
+private:
+	int m_max_request_size;
+	char* m_request_buffer;
 
-protected:
-	McpStdioServerTransport() {}
+	std::thread m_request_worker;
+	std::queue<std::string> m_request_queue;
+	std::mutex m_request_mutex;
+	std::condition_variable m_request_cv;
+
+	virtual void OnOpen();
+	virtual bool OnProcRequest();
+	virtual void OnSendResponse(const std::string& session_id, const std::string& response_str, bool is_finish);
 };
 
 }
