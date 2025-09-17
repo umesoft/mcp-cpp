@@ -35,7 +35,7 @@ public:
 	virtual void Shutdown();
 
 	virtual bool ToolsList(std::vector<McpTool>& tools);
-    virtual bool ToolsCall(std::string name, const std::map<std::string, std::string>& args);
+    virtual bool ToolsCall(std::string name, const std::map<std::string, std::string>& args, nlohmann::json& content);
 
 private:
 	std::string m_name;

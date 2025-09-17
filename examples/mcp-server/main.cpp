@@ -37,44 +37,30 @@ int main()
 	server->AddTool(
 		{
 			.name = "get_current_time",
-			.description = "Get the current time at the specified location.",
-			.input_schema = std::vector<McpProperty>
-				{
-					{ "location", MCP_PROPERTY_TYPE_STRING, "location", false }
-				},
-			.output_schema = std::vector<McpProperty>
-				{
-					{ "date", MCP_PROPERTY_TYPE_STRING, "date", true },
-					{ "time", MCP_PROPERTY_TYPE_STRING, "time", true }
-				}
+			.description = "Get the current time in UTC.",
 		},
 		[&server](const std::string& session_id, const std::map<std::string, std::string>& args)
 		{
 			time_t now = time(NULL);
-    		struct tm* tm_info = localtime(&now);
+    		struct tm* tm_info = gmtime(&now);
 
-			char date_str[20];
-			strftime(date_str, sizeof(date_str), "%Y/%m/%d", tm_info);
-			char time_str[20];
-			strftime(time_str, sizeof(time_str), "%H:%M:%S", tm_info);
+			char date_str[24];
+			snprintf(
+				date_str, 
+				sizeof(date_str), 
+				"%04d-%02d-%02dT%02d:%02d:%02dZ",
+				tm_info->tm_year + 1900,
+				tm_info->tm_mon + 1,
+				tm_info->tm_mday,
+				tm_info->tm_hour,
+				tm_info->tm_min,
+				tm_info->tm_sec
+			);
 
 			server->SendToolResponse(
-				session_id, 
-				"get_current_time", 
-				{
-					{
-						{
-							{
-								.name = "date",
-								.value = date_str
-							},
-							{
-								.name = "time",
-								.value = time_str
-							},
-						}
-					}
-				}
+				session_id,
+				"count_down",
+				CreateSimpleContent(date_str)
 			);
 		}
 	);

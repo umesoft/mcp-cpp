@@ -1,5 +1,4 @@
 #include "mcp_client_impl.h"
-#include "nlohmann/json.hpp"
 
 namespace Mcp {
 
@@ -78,7 +77,7 @@ bool McpClientImpl::ToolsList(std::vector<McpTool>& tools)
 		{
 			if(response_json["result"].contains("tools"))
 			{
-				auto tools_json = response_json["result"]["tools"];
+                auto tools_json = response_json["result"]["tools"];
 				for (auto it = tools_json.begin(); it != tools_json.end(); it++)
 				{
 					McpTool tool;
@@ -87,7 +86,7 @@ bool McpClientImpl::ToolsList(std::vector<McpTool>& tools)
 					if (it->find("inputSchema") != it->end())
 					{
 						auto input_schema_json = (*it)["inputSchema"];
-                        /*
+						/* Under development...
 						for (auto it2 = input_schema_json.begin(); it2 != input_schema_json.end(); it2++)
 						{
 							McpProperty property;
@@ -102,8 +101,8 @@ bool McpClientImpl::ToolsList(std::vector<McpTool>& tools)
 					if (it->find("outputSchema") != it->end())
 					{
 						auto output_schema_json = (*it)["outputSchema"];
-                        /*
-						for (auto it2 = output_schema_json.begin(); it2 != output_schema_json.end(); it2++)
+                        /* Under development...
+                        for (auto it2 = output_schema_json.begin(); it2 != output_schema_json.end(); it2++)
 						{
 							McpProperty property;
 							// property.name = (*it2)["propertyName"].get<std::string>();
@@ -127,7 +126,7 @@ bool McpClientImpl::ToolsList(std::vector<McpTool>& tools)
     return true;
 }
 
-bool McpClientImpl::ToolsCall(std::string name, const std::map<std::string, std::string>& args)
+bool McpClientImpl::ToolsCall(std::string name, const std::map<std::string, std::string>& args, nlohmann::json& content)
 {
     auto tool_call = R"(
         {
@@ -156,6 +155,8 @@ bool McpClientImpl::ToolsCall(std::string name, const std::map<std::string, std:
     try
     {
         auto response_json = nlohmann::json::parse(response);
+
+		content = response_json["result"]["content"];
     }
     catch (const nlohmann::json::parse_error& e)
     {

@@ -21,13 +21,32 @@
 
 using namespace Mcp;
 
-void test_assistant()
+int main()
 {
-    openai::start("", "", true, "http://172.16.2.229:1234/v1/");
+	//-----------------------------------------------------
+	// Initialize & Call Tools/List
+	//-----------------------------------------------------
+
+	std::shared_ptr<McpHttpClientTransport> transport = std::move(McpHttpClientTransport::CreateInstance(
+        "http://localhost:8000", 
+        "/mcp")
+    );
+	
+    auto client = McpClient::CreateInstance("MCP Test Client", "1.0.0.0");
+	client->Initialize(transport);
+	
+	std::vector<McpTool> tools;
+	client->ToolsList(tools);
+
+	//-----------------------------------------------------
+	// Ask an LLM, "What time is it now in San Diego?"
+	//-----------------------------------------------------
+
+	openai::start("", "", true, "http://localhost:1234/v1/");
 
 	auto request = R"(
 	    {
-	        "model": "gpt-oss-20B",
+			"model": "gpt-oss-20b",
 	        "messages": [
 	        	{
 	        		"role": "system", 
@@ -38,76 +57,103 @@ void test_assistant()
 	        		"content": "What time is it now in San Diego?"
 	        	}
 	        ],
-			"tools": [
-	    		{
-	      			"type": "function",
-					"function": {
-						"name": "get_current_time",
-				        "description": "Get the current time in UTC",
-        				"parameters": {
-          					"type": "object",
-	          				"properties": {},
-			    	      	"required": []
-						}
-					}
-				}
-			],
+			"tools": [],
 			"tool_choice": "auto"
 		}
 	)"_json;
 
-    auto response = openai::chat().create(request);
-    std::cout << "Response is:\n" << response.dump(2) << '\n';
-    
-    auto choices = response["choices"];
-    for(auto it = choices.begin(); it != choices.end(); it++)
-    {
-    	auto message = (*it)["message"];
-		request["messages"].push_back(message);
-
-	    auto tool_calls = message["tool_calls"];
-	    for(auto it2 = tool_calls.begin(); it2 != tool_calls.end(); it2++)
-	    {
-			auto func_output = R"(
-		    	{
-		    		"role": "tool", 
-		    		"tool_call_id": "",
-		    		"content": "2025-09-17 10:15:23 UTC"
+	for (auto it = tools.begin(); it != tools.end(); it++)
+	{
+		auto tool = R"(
+			{
+				"type": "function",
+				"function": {
+					"name": "",
+					"description": "",
+					"parameters": {
+						"type": "object",
+						"properties": {},
+						"required": []
+					}
 				}
-			)"_json;
-			func_output["tool_call_id"] = (*it2)["id"];
-			request["messages"].push_back(func_output);
-			break;
-		}
-		break;
+			}
+		)"_json;
+
+		tool["function"]["name"] = it->name;
+		tool["function"]["description"] = it->description;
+
+		request["tools"].push_back(tool);
 	}
-	
-    auto response2 = openai::chat().create(request);
-    std::cout << "Response is:\n" << response2.dump(2) << '\n';
-}
 
-int main()
-{
-	/*
-	std::shared_ptr<McpHttpClientTransport> transport = std::move(McpHttpClientTransport::CreateInstance(
-        "http://localhost:8000", 
-        "/mcp")
-    );
-	
-    auto client = McpClient::CreateInstance("MCP Test Client", "1.0.0.0");
-	client->Initialize(transport);
-	
-    std::vector<McpTool> tools;
-    client->ToolsList(tools);
+	std::cout << "LLM Request is:\n" << request.dump(2) << '\n';
+	auto response = openai::chat().create(request);
+	std::cout << "LLM Response is:\n" << response.dump(2) << '\n';
 
-    std::map<std::string, std::string> args;
-    args["value"] = "3";
-    client->ToolsCall("count_down", args);
-	
+	//-----------------------------------------------------
+	// Check the response for a tool call
+	//-----------------------------------------------------
+
+	nlohmann::json tool_message;
+	std::string tool_call_id = "";
+	nlohmann::json content;
+
+	for (auto it = response["choices"].begin(); it != response["choices"].end(); it++)
+	{
+		auto message = (*it)["message"];
+		if (message.contains("tool_calls"))
+		{
+			for (auto it2 = message["tool_calls"].begin(); it2 != message["tool_calls"].end(); it2++)
+			{
+				auto tool_call = (*it2);
+				if (tool_call["function"]["name"] == "get_current_time")
+				{
+					tool_message = message;
+					tool_call_id = tool_call["id"];
+
+					// Call the tool via MCP
+					std::map<std::string, std::string> args;
+					client->ToolsCall("get_current_time", args, content);
+					std::cout << "MCP Response is:\n" << content.dump(2) << std::endl;
+					break;
+				}
+			}
+		}
+	}
+
+	if (tool_call_id.empty())
+	{
+		std::cout << "No tool call found in the response.\n";
+		return 0;
+	}
+
+	//-----------------------------------------------------
+	// Set tools call result and call the LLM again
+	//-----------------------------------------------------
+
+	request["messages"].push_back(tool_message);
+
+	auto func_output = R"(
+		{
+		    "role": "tool", 
+		    "tool_call_id": "",
+		    "content": []
+		}
+	)"_json;
+
+	func_output["tool_call_id"] = tool_call_id;
+	func_output["content"] = content;
+
+	request["messages"].push_back(func_output);
+
+	std::cout << "LLM Request is:\n" << request.dump(2) << '\n';
+	auto response2 = openai::chat().create(request);
+	std::cout << "LLM Response is:\n" << response2.dump(2) << '\n';
+
+	//-----------------------------------------------------
+	// Shutdown
+	//-----------------------------------------------------
+
     client->Shutdown();
-	*/
-	
-	test_assistant();
 	
     return 0;
 }
