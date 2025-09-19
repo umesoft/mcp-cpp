@@ -183,4 +183,43 @@ bool McpHttpClientTransportImpl::SendRequest(const std::string& request, std::st
     return true;
 }
 
+bool McpHttpClientTransportImpl::SendNotification(const std::string& notification)
+{
+    if (m_curl == nullptr)
+    {
+        return false;
+    }
+    if (m_session_id.empty())
+    {
+        return false;
+    }
+
+    struct curl_slist* headers = NULL;
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+    headers = curl_slist_append(headers, m_session_id.c_str());
+    curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, headers);
+
+    curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str());
+
+    curl_easy_setopt(m_curl, CURLOPT_POST, 1L);
+    curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE_LARGE, notification.length());
+    curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, notification.c_str());
+
+    m_headers.clear();
+    m_header_buffer = "";
+    m_response = "";
+    m_response_buffer = "";
+
+    CURLcode  res = curl_easy_perform(m_curl);
+    if (res != CURLE_OK)
+    {
+        curl_slist_free_all(headers);
+        return false;
+    }
+
+    curl_slist_free_all(headers);
+
+    return true;
+}
+
 }

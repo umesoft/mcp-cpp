@@ -132,4 +132,15 @@ bool McpStdioClientTransportImpl_Posix::OnSendRequest(const std::string& request
 	return true;
 }
 
+bool McpStdioClientTransportImpl_Posix::OnSendNotification(const std::string& request)
+{
+    if (m_stdin_fd == -1)
+        return false;
+
+    write(m_stdin_fd, request.c_str(), request.size());
+    write(m_stdin_fd, "\n", 1);
+
+	return true;
+}
+
 }

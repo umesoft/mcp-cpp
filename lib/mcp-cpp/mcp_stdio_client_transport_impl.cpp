@@ -69,4 +69,9 @@ bool McpStdioClientTransportImpl::SendRequest(const std::string& request, std::s
     return OnSendRequest(request, response);
 }
 
+bool McpStdioClientTransportImpl::SendNotification(const std::string& notification)
+{
+    return OnSendNotification(notification);
+}
+
 }

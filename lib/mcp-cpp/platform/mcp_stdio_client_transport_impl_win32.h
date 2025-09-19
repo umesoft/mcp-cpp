@@ -32,6 +32,7 @@ protected:
 	virtual bool OnCreateProcess();
 	virtual void OnTerminateProcess();
 	virtual bool OnSendRequest(const std::string& request, std::string& response);
+	virtual bool OnSendNotification(const std::string& notification);
 
 private:
 	HANDLE m_hStdOutRead;

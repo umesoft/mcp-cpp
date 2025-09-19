@@ -34,6 +34,7 @@ public:
 	virtual bool Initialize(const std::string& request, std::string& response);
 	virtual void Shutdown();
 	virtual bool SendRequest(const std::string& request, std::string& response);
+	virtual bool SendNotification(const std::string& notification);
 
 private:
 	std::string m_host;

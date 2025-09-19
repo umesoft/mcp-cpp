@@ -73,6 +73,18 @@ bool McpClientImpl::Initialize(std::shared_ptr<McpClientTransport> transport)
         return false;
     }
 
+    auto initialize_notification = R"(
+        {
+            "jsonrpc": "2.0",
+            "method": "notifications/initialized"
+        }    
+    )"_json;
+
+    if (!m_transport->SendNotification(initialize_notification.dump()))
+    {
+        return false;
+    }
+
 	return true;
 }
 

@@ -33,6 +33,7 @@ public:
 	virtual bool Initialize(const std::string& request, std::string& response);
 	virtual void Shutdown();
 	virtual bool SendRequest(const std::string& request, std::string& response);
+	virtual bool SendNotification(const std::string& notification);
 
 protected:
 	std::wstring m_filepath;
@@ -40,6 +41,7 @@ protected:
 	virtual bool OnCreateProcess() = 0;
 	virtual void OnTerminateProcess() = 0;
 	virtual bool OnSendRequest(const std::string& request, std::string& response) = 0;
+	virtual bool OnSendNotification(const std::string& notification) = 0;
 };
 
 }

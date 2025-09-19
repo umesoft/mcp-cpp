@@ -129,4 +129,13 @@ bool McpStdioClientTransportImpl_Win32::OnSendRequest(const std::string& request
 	return true;
 }
 
+bool McpStdioClientTransportImpl_Win32::OnSendNotification(const std::string& notification)
+{
+    DWORD written;
+    WriteFile(m_hStdInWrite, notification.c_str(), (DWORD)notification.size(), &written, NULL);
+    WriteFile(m_hStdInWrite, "\n", 1, &written, NULL);
+
+    return true;
+}
+
 }

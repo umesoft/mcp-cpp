@@ -28,6 +28,7 @@ public:
 	virtual bool Initialize(const std::string& request, std::string& response) = 0;
 	virtual void Shutdown() = 0;
 	virtual bool SendRequest(const std::string& request, std::string& response) = 0;
+	virtual bool SendNotification(const std::string& notification) = 0;
 
 protected:
 	McpClientTransport();
