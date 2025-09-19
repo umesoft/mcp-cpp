@@ -38,7 +38,7 @@ int main()
 #ifdef USE_HTTP_TRANSPORT
 	std::shared_ptr<McpHttpClientTransport> transport = std::move(McpHttpClientTransport::CreateInstance("http://localhost:8000", "/mcp"));
 #else
-#ifdef _WND32
+#ifdef _WIN32
 	std::shared_ptr<McpStdioClientTransport> transport = std::move(McpStdioClientTransport::CreateInstance(L"mcp-server.exe"));
 #else
 	std::shared_ptr<McpStdioClientTransport> transport = std::move(McpStdioClientTransport::CreateInstance(L"../mcp-server/mcp-server"));
