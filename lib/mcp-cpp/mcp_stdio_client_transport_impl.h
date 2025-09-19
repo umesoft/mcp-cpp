@@ -30,22 +30,8 @@ public:
 	McpStdioClientTransportImpl(const std::wstring& filepath);
 	virtual ~McpStdioClientTransportImpl();
 
-	virtual bool Initialize(const std::string& request, std::string& response);
-	virtual void Shutdown();
-	virtual bool SendRequest(const std::string& request, std::string& response);
-
-private:
+protected:
 	std::wstring m_filepath;
-
-#ifdef _WIN32
-	HANDLE m_hStdOutRead;
-	HANDLE m_hStdInWrite;
-	HANDLE m_hProcess;
-#else
-	int m_stdout_fd;
-	int m_stdin_fd;
-    int m_child_pid;
-#endif
 };
 
 }

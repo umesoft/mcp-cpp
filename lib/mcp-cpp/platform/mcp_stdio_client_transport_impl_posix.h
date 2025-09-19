@@ -15,33 +15,25 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "mcp_stdio_client_transport_impl.h"
+#pragma once
 
-#ifdef _WIN32
-#include "platform/mcp_stdio_client_transport_impl_win32.h"
-#else
-#include "platform/mcp_stdio_client_transport_impl_posix.h"
-#endif
+#include "../mcp_stdio_client_transport_impl.h"
 
-namespace Mcp
-{
+namespace Mcp {
 
-std::unique_ptr<McpStdioClientTransport> McpStdioClientTransport::CreateInstance(const std::wstring& filepath)
-{
-#ifdef _WIN32
-    return std::make_unique<McpStdioClientTransportImpl_Win32>(filepath);
-#else
-    return std::make_unique<McpStdioClientTransportImpl_Posix>(filepath);
-#endif
-}
+class McpStdioClientTransportImpl_Posix : public McpStdioClientTransport {
+public:
+	McpStdioClientTransportImpl_Posix(const std::wstring& filepath);
+	virtual ~McpStdioClientTransportImpl_Posix();
 
-McpStdioClientTransportImpl::McpStdioClientTransportImpl(const std::wstring& filepath)
-	: m_filepath(filepath)
-{
-}
+	virtual bool Initialize(const std::string& request, std::string& response);
+	virtual void Shutdown();
+	virtual bool SendRequest(const std::string& request, std::string& response);
 
-McpStdioClientTransportImpl::~McpStdioClientTransportImpl()
-{
-}
+private:
+	int m_stdout_fd;
+	int m_stdin_fd;
+    int m_child_pid;
+};
 
 }
