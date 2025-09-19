@@ -23,7 +23,7 @@ namespace Mcp
 {
 
 McpStdioClientTransportImpl_Posix::McpStdioClientTransportImpl_Posix(const std::wstring& filepath)
-	: m_filepath(filepath)
+	: McpStdioClientTransportImpl(filepath)
     , m_child_pid(-1)
     , m_stdin_fd(-1)
     , m_stdout_fd(-1)
@@ -34,7 +34,7 @@ McpStdioClientTransportImpl_Posix::~McpStdioClientTransportImpl_Posix()
 {
 }
 
-bool McpStdioClientTransportImpl_Posix::Initialize(const std::string& request, std::string& response)
+bool McpStdioClientTransportImpl_Win32::OnCreateProcess()
 {
     int stdin_pipe[2];
     int stdout_pipe[2];
@@ -78,23 +78,10 @@ bool McpStdioClientTransportImpl_Posix::Initialize(const std::string& request, s
     m_stdin_fd = stdin_pipe[1];
     m_stdout_fd = stdout_pipe[0];
 
-    write(m_stdin_fd, request.c_str(), request.size());
-    write(m_stdin_fd, "\n", 1);
-
-    char buffer[4096];
-    ssize_t read_size = read(m_stdout_fd, buffer, sizeof(buffer) - 1);
-    if (read_size <= 0)
-    {
-        return false;
-    }
-
-    buffer[read_size] = '\0';
-    response = buffer;
-
 	return true;
 }
 
-void McpStdioClientTransportImpl_Posix::Shutdown()
+void McpStdioClientTransportImpl_Posix::OnTerminateProcess()
 {
     if (m_stdin_fd != -1)
     {
@@ -124,7 +111,7 @@ void McpStdioClientTransportImpl_Posix::Shutdown()
     }
 }
 
-bool McpStdioClientTransportImpl_Posix::SendRequest(const std::string& request, std::string& response)
+bool McpStdioClientTransportImpl_Posix::OnSendRequest(const std::string& request, std::string& response)
 {
     if (m_stdin_fd == -1 || m_stdout_fd == -1)
         return false;

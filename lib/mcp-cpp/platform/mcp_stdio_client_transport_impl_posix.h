@@ -26,9 +26,10 @@ public:
 	McpStdioClientTransportImpl_Posix(const std::wstring& filepath);
 	virtual ~McpStdioClientTransportImpl_Posix();
 
-	virtual bool Initialize(const std::string& request, std::string& response);
-	virtual void Shutdown();
-	virtual bool SendRequest(const std::string& request, std::string& response);
+protected:
+	virtual bool OnCreateProcess();
+	virtual void OnTerminateProcess();
+	virtual bool OnSendRequest(const std::string& request, std::string& response);
 
 private:
 	int m_stdout_fd;

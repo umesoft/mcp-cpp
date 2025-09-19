@@ -30,8 +30,16 @@ public:
 	McpStdioClientTransportImpl(const std::wstring& filepath);
 	virtual ~McpStdioClientTransportImpl();
 
+	virtual bool Initialize(const std::string& request, std::string& response);
+	virtual void Shutdown();
+	virtual bool SendRequest(const std::string& request, std::string& response);
+
 protected:
 	std::wstring m_filepath;
+
+	virtual bool OnCreateProcess() = 0;
+	virtual void OnTerminateProcess() = 0;
+	virtual bool OnSendRequest(const std::string& request, std::string& response) = 0;
 };
 
 }

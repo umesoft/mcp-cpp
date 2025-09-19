@@ -44,4 +44,29 @@ McpStdioClientTransportImpl::~McpStdioClientTransportImpl()
 {
 }
 
+bool McpStdioClientTransportImpl::Initialize(const std::string& request, std::string& response)
+{
+    if (!OnCreateProcess())
+    {
+        return false;
+    }
+
+	if (!OnSendRequest(request, response))
+	{
+		return false;
+	}
+
+    return true;
+}
+
+void McpStdioClientTransportImpl::Shutdown()
+{
+    OnTerminateProcess();
+}
+
+bool McpStdioClientTransportImpl::SendRequest(const std::string& request, std::string& response)
+{
+    return OnSendRequest(request, response);
+}
+
 }

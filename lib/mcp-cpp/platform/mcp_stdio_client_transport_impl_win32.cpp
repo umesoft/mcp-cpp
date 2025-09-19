@@ -32,7 +32,7 @@ McpStdioClientTransportImpl_Win32::~McpStdioClientTransportImpl_Win32()
 {
 }
 
-bool McpStdioClientTransportImpl_Win32::Initialize(const std::string& request, std::string& response)
+bool McpStdioClientTransportImpl_Win32::OnCreateProcess()
 {
     SECURITY_ATTRIBUTES saAttr{};
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -71,7 +71,7 @@ bool McpStdioClientTransportImpl_Win32::Initialize(const std::string& request, s
         NULL,
         NULL,
         &si,
-        &pi)) 
+        &pi))
     {
         Shutdown();
         return false;
@@ -84,22 +84,10 @@ bool McpStdioClientTransportImpl_Win32::Initialize(const std::string& request, s
 
     m_hProcess = pi.hProcess;
 
-    DWORD written;
-    WriteFile(m_hStdInWrite, request.c_str(), (DWORD)request.size(), &written, NULL);
-    WriteFile(m_hStdInWrite, "\n", 1, &written, NULL);
-    FlushFileBuffers(m_hStdInWrite);
-
-    char buffer[4096];
-    DWORD read;
-    ReadFile(m_hStdOutRead, buffer, sizeof(buffer) - 1, &read, NULL);
-    buffer[read] = '\0';
-
-    response = buffer;
-
-	return true;
+    return true;
 }
 
-void McpStdioClientTransportImpl_Win32::Shutdown()
+void McpStdioClientTransportImpl_Win32::OnTerminateProcess()
 {
     if (m_hStdInWrite != NULL)
     {
@@ -125,12 +113,11 @@ void McpStdioClientTransportImpl_Win32::Shutdown()
     }
 }
 
-bool McpStdioClientTransportImpl_Win32::SendRequest(const std::string& request, std::string& response)
+bool McpStdioClientTransportImpl_Win32::OnSendRequest(const std::string& request, std::string& response)
 {
     DWORD written;
     WriteFile(m_hStdInWrite, request.c_str(), (DWORD)request.size(), &written, NULL);
     WriteFile(m_hStdInWrite, "\n", 1, &written, NULL);
-    FlushFileBuffers(m_hStdInWrite);
 
     char buffer[4096];
     DWORD read;
