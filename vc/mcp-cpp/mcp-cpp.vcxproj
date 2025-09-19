@@ -17,6 +17,7 @@
     <ClCompile Include="..\..\lib\mcp-cpp\mcp_http_server_transport_impl.cpp" />
     <ClCompile Include="..\..\lib\mcp-cpp\mcp_server_impl.cpp" />
     <ClCompile Include="..\..\lib\mcp-cpp\mcp_server_transport.cpp" />
+    <ClCompile Include="..\..\lib\mcp-cpp\mcp_stdio_client_transport_impl.cpp" />
     <ClCompile Include="..\..\lib\mcp-cpp\mcp_stdio_server_transport_impl.cpp" />
     <ClCompile Include="..\..\lib\mcp-cpp\mcp_type.cpp" />
     <ClCompile Include="..\..\lib\mcp-cpp\platform\platform_win32.cpp" />
@@ -28,12 +29,14 @@
     <ClInclude Include="..\..\include\mcp-cpp\mcp_server.h" />
     <ClInclude Include="..\..\include\mcp-cpp\mcp_http_server_transport.h" />
     <ClInclude Include="..\..\include\mcp-cpp\mcp_server_transport.h" />
+    <ClInclude Include="..\..\include\mcp-cpp\mcp_stdio_client_transport.h" />
     <ClInclude Include="..\..\include\mcp-cpp\mcp_stdio_server_transport.h" />
     <ClInclude Include="..\..\include\mcp-cpp\mcp_type.h" />
     <ClInclude Include="..\..\lib\mcp-cpp\mcp_client_impl.h" />
     <ClInclude Include="..\..\lib\mcp-cpp\mcp_http_client_transport_impl.h" />
     <ClInclude Include="..\..\lib\mcp-cpp\mcp_http_server_transport_impl.h" />
     <ClInclude Include="..\..\lib\mcp-cpp\mcp_server_impl.h" />
+    <ClInclude Include="..\..\lib\mcp-cpp\mcp_stdio_client_transport_impl.h" />
     <ClInclude Include="..\..\lib\mcp-cpp\mcp_stdio_server_transport_impl.h" />
     <ClInclude Include="..\..\lib\mcp-cpp\platform\platform.h" />
   </ItemGroup>

@@ -17,7 +17,7 @@
 
 #include "mcp-cpp/mcp_server.h"
 
-#define USE_HTTP_TRANSPORT
+// #define USE_HTTP_TRANSPORT
 
 #ifdef USE_HTTP_TRANSPORT
 #include "mcp-cpp/mcp_http_server_transport.h"

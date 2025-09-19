@@ -17,20 +17,31 @@
 
 #pragma once
 
-#include "nlohmann/json.hpp"
+#include "mcp-cpp/mcp_stdio_client_transport.h"
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 namespace Mcp {
 
-class McpClientTransport {
+class McpStdioClientTransportImpl : public McpStdioClientTransport {
 public:
-	virtual ~McpClientTransport();
+	McpStdioClientTransportImpl(const std::wstring& filepath);
+	virtual ~McpStdioClientTransportImpl();
 
-	virtual bool Initialize(const std::string& request, std::string& response) = 0;
-	virtual void Shutdown() = 0;
-	virtual bool SendRequest(const std::string& request, std::string& response) = 0;
+	virtual bool Initialize(const std::string& request, std::string& response);
+	virtual void Shutdown();
+	virtual bool SendRequest(const std::string& request, std::string& response);
 
-protected:
-	McpClientTransport();
+private:
+	std::wstring m_filepath;
+
+#ifdef _WIN32
+	HANDLE m_hStdOutRead;
+	HANDLE m_hStdInWrite;
+	HANDLE m_hProcess;
+#endif
 };
 
 }

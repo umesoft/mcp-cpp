@@ -16,7 +16,15 @@
  */
 
 #include "mcp-cpp/mcp_client.h"
+
+// #define USE_HTTP_TRANSPORT
+
+#ifdef USE_HTTP_TRANSPORT
 #include "mcp-cpp/mcp_http_client_transport.h"
+#else
+#include "mcp-cpp/mcp_stdio_client_transport.h"
+#endif
+
 #include "openai-cpp/openai.hpp"
 
 using namespace Mcp;
@@ -27,11 +35,12 @@ int main()
 	// Initialize & Call Tools/List
 	//-----------------------------------------------------
 
-	std::shared_ptr<McpHttpClientTransport> transport = std::move(McpHttpClientTransport::CreateInstance(
-        "http://localhost:8000", 
-        "/mcp")
-    );
-	
+#ifdef USE_HTTP_TRANSPORT
+	std::shared_ptr<McpHttpClientTransport> transport = std::move(McpHttpClientTransport::CreateInstance("http://localhost:8000", "/mcp"));
+#else
+	std::shared_ptr<McpStdioClientTransport> transport = std::move(McpStdioClientTransport::CreateInstance(L"mcp-server.exe"));
+#endif
+
     auto client = McpClient::CreateInstance("MCP Test Client", "1.0.0.0");
 	client->Initialize(transport);
 	

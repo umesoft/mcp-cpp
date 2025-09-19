@@ -89,7 +89,7 @@ size_t McpHttpClientTransportImpl::WriteCallback(char* ptr, size_t size, size_t 
     return totalSize;
 }
 
-bool McpHttpClientTransportImpl::Initialize(const std::string& request)
+bool McpHttpClientTransportImpl::Initialize(const std::string& request, std::string& response)
 {
     m_curl = curl_easy_init();
 
@@ -127,6 +127,8 @@ bool McpHttpClientTransportImpl::Initialize(const std::string& request)
 	{
 		m_session_id = "mcp-session-id: " + m_headers["mcp-session-id"];
 	}
+
+	response = m_response.substr(21);       // #TODO#
 
     return true;
 }

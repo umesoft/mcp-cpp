@@ -31,7 +31,7 @@ public:
 	McpHttpClientTransportImpl(const std::string& host, const std::string& entry_point);
 	virtual ~McpHttpClientTransportImpl();
 
-	virtual bool Initialize(const std::string& request);
+	virtual bool Initialize(const std::string& request, std::string& response);
 	virtual void Shutdown();
 	virtual bool SendRequest(const std::string& request, std::string& response);
 

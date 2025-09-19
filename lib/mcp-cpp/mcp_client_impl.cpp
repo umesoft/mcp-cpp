@@ -41,7 +41,20 @@ bool McpClientImpl::Initialize(std::shared_ptr<McpClientTransport> transport)
     initialize["params"]["clientInfo"]["name"] = m_name;
     initialize["params"]["clientInfo"]["version"] = m_version;
 
-    m_transport->Initialize(initialize.dump());
+    std::string response;
+    if (!m_transport->Initialize(initialize.dump(), response))
+    {
+        return false;
+    }
+
+    try
+	{
+		auto response_json = nlohmann::json::parse(response);
+    }
+    catch (const nlohmann::json::parse_error& e)
+    {
+        return false;
+    }
 
 	return true;
 }

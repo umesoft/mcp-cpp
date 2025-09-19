@@ -15,6 +15,7 @@ add_library(mcp-cpp STATIC
     mcp_server_impl.cpp
     mcp_client_transport.cpp
     mcp_http_client_transport_impl.cpp
+    mcp_stdio_client_transport_impl.cpp
     mcp_client_impl.cpp
 )
 

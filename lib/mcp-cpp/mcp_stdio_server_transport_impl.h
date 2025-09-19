@@ -23,7 +23,6 @@
 #include <mutex>
 #include <queue>
 #include <string>
-#include <thread>
 
 namespace Mcp {
 
@@ -36,7 +35,8 @@ private:
 	int m_max_request_size;
 	char* m_request_buffer;
 
-	std::thread m_request_worker;
+	bool m_stdin_close;
+
 	std::queue<std::string> m_request_queue;
 	std::mutex m_request_mutex;
 	std::condition_variable m_request_cv;

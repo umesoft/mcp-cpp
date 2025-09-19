@@ -16,6 +16,7 @@
  */
 
 #include "mcp_stdio_server_transport_impl.h"
+#include <thread>
 #include <stdio.h>
 
 namespace Mcp
@@ -29,6 +30,7 @@ std::unique_ptr<McpStdioServerTransport> McpStdioServerTransport::CreateInstance
 McpStdioServerTransportImpl::McpStdioServerTransportImpl(int max_request_size)
 	: McpStdioServerTransport()
 	, m_max_request_size(max_request_size)
+	, m_stdin_close(false)
 {
 	m_request_buffer = new char[m_max_request_size];
 }
@@ -40,14 +42,21 @@ McpStdioServerTransportImpl::~McpStdioServerTransportImpl()
 
 void McpStdioServerTransportImpl::OnOpen()
 {
-	m_request_worker = std::thread([this]
+	auto request_worker = std::thread([this]
 	{
+		fprintf(stderr, "+++ OnOpen +++\n");
+
 		while (true)
 		{
 			if (fgets(m_request_buffer, m_max_request_size, stdin) == nullptr)
 			{
+				fprintf(stderr, "Detect: stdin - close\n");
+				m_stdin_close = true;
+				m_request_cv.notify_one();
 				break;
 			}
+
+			fprintf(stderr, "recv: %s\n", m_request_buffer);
 
 			int pos = strlen(m_request_buffer);
 			if (m_request_buffer[pos - 1] == '\n')
@@ -60,6 +69,7 @@ void McpStdioServerTransportImpl::OnOpen()
 			}
 		}
 	});
+	request_worker.detach();
 }
 
 bool McpStdioServerTransportImpl::OnProcRequest()
@@ -68,6 +78,11 @@ bool McpStdioServerTransportImpl::OnProcRequest()
 	if (m_request_cv.wait_for(lock, std::chrono::milliseconds(100)) == std::cv_status::timeout)
 	{
 		return true;
+	}
+
+	if (m_stdin_close)
+	{
+		return false;
 	}
 
 	while (!m_request_queue.empty())

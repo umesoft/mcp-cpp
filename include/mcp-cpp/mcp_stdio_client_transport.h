@@ -19,11 +19,18 @@
 
 #include "mcp_client_transport.h"
 
+#include <string>
+
 namespace Mcp {
 
 class McpStdioClientTransport : public McpClientTransport {
 public:
+	static std::unique_ptr<McpStdioClientTransport> CreateInstance(const std::wstring& filepath);
+
 	virtual ~McpStdioClientTransport() {}
+
+protected:
+	McpStdioClientTransport() {}
 };
 
 }
