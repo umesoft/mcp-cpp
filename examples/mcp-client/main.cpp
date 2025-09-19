@@ -38,7 +38,11 @@ int main()
 #ifdef USE_HTTP_TRANSPORT
 	std::shared_ptr<McpHttpClientTransport> transport = std::move(McpHttpClientTransport::CreateInstance("http://localhost:8000", "/mcp"));
 #else
+#ifdef _WND32
 	std::shared_ptr<McpStdioClientTransport> transport = std::move(McpStdioClientTransport::CreateInstance(L"mcp-server.exe"));
+#else
+	std::shared_ptr<McpStdioClientTransport> transport = std::move(McpStdioClientTransport::CreateInstance(L"../mcp-server/mcp-server"));
+#endif
 #endif
 
     auto client = McpClient::CreateInstance("MCP Test Client", "1.0.0.0");
@@ -55,7 +59,7 @@ int main()
 
 	auto request = R"(
 	    {
-			"model": "gpt-oss-20b",
+			"model": "phi-4",
 	        "messages": [
 	        	{
 	        		"role": "system", 

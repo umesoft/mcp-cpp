@@ -41,6 +41,10 @@ private:
 	HANDLE m_hStdOutRead;
 	HANDLE m_hStdInWrite;
 	HANDLE m_hProcess;
+#else
+	int m_stdout_fd;
+	int m_stdin_fd;
+    int m_child_pid;
 #endif
 };
 
