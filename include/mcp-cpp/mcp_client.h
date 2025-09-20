@@ -17,15 +17,7 @@
 
 #pragma once
 
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "mcp_type.h"
 #include "mcp_client_transport.h"
-
-#include "nlohmann/json.hpp"
 
 namespace Mcp {
 

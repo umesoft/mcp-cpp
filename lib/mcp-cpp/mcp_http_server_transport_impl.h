@@ -19,12 +19,6 @@
 
 #include "mcp-cpp/mcp_http_server_transport.h"
 
-#include <map>
-#include <mutex>
-#include <queue>
-#include <string>
-#include <vector>
-
 namespace Mcp {
 
 class McpHttpServerTransportImpl : public McpHttpServerTransport {

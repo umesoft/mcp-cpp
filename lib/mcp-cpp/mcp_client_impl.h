@@ -19,11 +19,6 @@
 
 #include "mcp-cpp/mcp_client.h"
 
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
 namespace Mcp {
 
 class McpClientImpl : public McpClient {

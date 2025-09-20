@@ -21,9 +21,6 @@
 
 #include "curl/curl.h"
 
-#include <memory>
-#include <string>
-
 namespace Mcp {
 
 class McpHttpClientTransportImpl : public McpHttpClientTransport {

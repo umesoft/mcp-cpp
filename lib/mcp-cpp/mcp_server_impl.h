@@ -19,11 +19,6 @@
 
 #include "mcp-cpp/mcp_server.h"
 
-#include <functional>
-#include <map>
-#include <string>
-#include <vector>
-
 namespace Mcp {
 
 class McpServerImpl : public McpServer

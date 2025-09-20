@@ -18,8 +18,6 @@
 #include "mcp_http_client_transport_impl.h"
 #include "mcp_common.h"
 
-#include <string.h>
-
 namespace Mcp {
 
 std::unique_ptr<McpHttpClientTransport> McpHttpClientTransport::CreateInstance(

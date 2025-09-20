@@ -19,10 +19,6 @@
 
 #include "mcp-cpp/mcp_stdio_client_transport.h"
 
-#ifdef _WIN32
-#include <Windows.h>
-#endif
-
 namespace Mcp {
 
 class McpStdioClientTransportImpl : public McpStdioClientTransport {

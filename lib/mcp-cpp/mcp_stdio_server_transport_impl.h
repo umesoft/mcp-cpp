@@ -19,11 +19,6 @@
 
 #include "mcp-cpp/mcp_stdio_server_transport.h"
 
-#include <condition_variable>
-#include <mutex>
-#include <queue>
-#include <string>
-
 namespace Mcp {
 
 class McpStdioServerTransportImpl : public McpStdioServerTransport {

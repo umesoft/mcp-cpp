@@ -17,13 +17,6 @@
 
 #pragma once
 
-#include <functional>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "mcp_type.h"
 #include "mcp_server_transport.h"
 
 namespace Mcp {

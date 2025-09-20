@@ -17,6 +17,8 @@
 
 #pragma
 
+#include "mcp-cpp/mcp_type.h"
+
 namespace Mcp {
 
 inline void string_to_lower(std::string& value)

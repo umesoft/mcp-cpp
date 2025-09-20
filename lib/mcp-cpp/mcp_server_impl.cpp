@@ -16,7 +16,6 @@
  */
 
 #include "mcp_server_impl.h"
-#include "jwt-cpp/jwt.h"
 
 namespace Mcp {
 

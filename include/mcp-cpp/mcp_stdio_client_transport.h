@@ -19,8 +19,6 @@
 
 #include "mcp_client_transport.h"
 
-#include <string>
-
 namespace Mcp {
 
 class McpStdioClientTransport : public McpClientTransport {

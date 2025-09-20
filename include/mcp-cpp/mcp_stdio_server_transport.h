@@ -19,8 +19,6 @@
 
 #include "mcp_server_transport.h"
 
-#include <memory>
-
 namespace Mcp {
 
 class McpStdioServerTransport : public McpServerTransport {

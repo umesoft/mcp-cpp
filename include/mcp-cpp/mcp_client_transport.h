@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "nlohmann/json.hpp"
+#include "mcp_type.h"
 
 namespace Mcp {
 
