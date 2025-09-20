@@ -27,6 +27,7 @@ std::unique_ptr<McpClient> McpClient::CreateInstance(const std::string& name, co
 McpClientImpl::McpClientImpl(const std::string& name, const std::string& version)
     : m_name(name)
     , m_version(version)
+    , m_request_id(1)
 {
 }
 
@@ -38,10 +39,12 @@ bool McpClientImpl::Initialize(std::shared_ptr<McpClientTransport> transport)
 {
     m_transport = transport;
 
+    m_request_id = 1;
+
     auto initialize = R"(
         {
             "jsonrpc": "2.0",
-            "id": 1,
+            "id": 0,
             "method": "initialize",
                 "params": {
                 "protocolVersion": "2025-06-18",
@@ -55,20 +58,18 @@ bool McpClientImpl::Initialize(std::shared_ptr<McpClientTransport> transport)
         }    
     )"_json;
 
+    initialize["id"] = m_request_id;
     initialize["params"]["clientInfo"]["name"] = m_name;
     initialize["params"]["clientInfo"]["version"] = m_version;
 
-    std::string response;
-    if (!m_transport->Initialize(initialize.dump(), response))
-    {
-        return false;
-    }
-
-    try
-	{
-		auto response_json = nlohmann::json::parse(response);
-    }
-    catch (const nlohmann::json::parse_error& e)
+    nlohmann::json response_json;
+    if (!m_transport->Initialize(
+        initialize.dump(), 
+        [this, &response_json](const std::string& response)->bool
+        {
+			return this->IsCorrectResponse(response, response_json);
+        }
+    ))
     {
         return false;
     }
@@ -96,84 +97,87 @@ void McpClientImpl::Shutdown()
 
 bool McpClientImpl::ToolsList(std::vector<McpTool>& tools)
 {
-    auto tool_call = R"(
+    m_request_id++;
+
+    auto tool_list = R"(
         {
             "jsonrpc": "2.0",
-            "id": 2,
+            "id": 0,
             "method": "tools/list",
             "params": {}
         }
     )"_json;
 
-    std::string response;
-    if (!m_transport->SendRequest(tool_call.dump(), response))
+    tool_list["id"] = m_request_id;
+
+    nlohmann::json response_json;
+    if (!m_transport->SendRequest(
+        tool_list.dump(), 
+        [this, &response_json](const std::string& response)->bool
+        {
+            return this->IsCorrectResponse(response, response_json);
+        }
+    ))
     {
         return false;
     }
 
-    try
-    {
-        auto response_json = nlohmann::json::parse(response);
-
-		if (response_json.contains("result"))
+	if (response_json.contains("result"))
+	{
+		if(response_json["result"].contains("tools"))
 		{
-			if(response_json["result"].contains("tools"))
+            auto tools_json = response_json["result"]["tools"];
+			for (auto it = tools_json.begin(); it != tools_json.end(); it++)
 			{
-                auto tools_json = response_json["result"]["tools"];
-				for (auto it = tools_json.begin(); it != tools_json.end(); it++)
+				McpTool tool;
+                tool.name = (*it)["name"].get<std::string>();
+                tool.description = (*it)["description"].get<std::string>();
+				if (it->find("inputSchema") != it->end())
 				{
-					McpTool tool;
-                    tool.name = (*it)["name"].get<std::string>();
-                    tool.description = (*it)["description"].get<std::string>();
-					if (it->find("inputSchema") != it->end())
+					auto input_schema_json = (*it)["inputSchema"];
+					/* Under development...
+					for (auto it2 = input_schema_json.begin(); it2 != input_schema_json.end(); it2++)
 					{
-						auto input_schema_json = (*it)["inputSchema"];
-						/* Under development...
-						for (auto it2 = input_schema_json.begin(); it2 != input_schema_json.end(); it2++)
-						{
-							McpProperty property;
-							// property.name = (*it2)["propertyName"].get<std::string>();
-							std::string type_str = (*it2)["type"].get<std::string>();
-							property.type = StringToMcpPropertyType(type_str);
-							property.description = (*it2)["description"].get<std::string>();
-							tool.input_schema.emplace_back(property);
-						}
-                        */
+						McpProperty property;
+						// property.name = (*it2)["propertyName"].get<std::string>();
+						std::string type_str = (*it2)["type"].get<std::string>();
+						property.type = StringToMcpPropertyType(type_str);
+						property.description = (*it2)["description"].get<std::string>();
+						tool.input_schema.emplace_back(property);
 					}
-					if (it->find("outputSchema") != it->end())
-					{
-						auto output_schema_json = (*it)["outputSchema"];
-                        /* Under development...
-                        for (auto it2 = output_schema_json.begin(); it2 != output_schema_json.end(); it2++)
-						{
-							McpProperty property;
-							// property.name = (*it2)["propertyName"].get<std::string>();
-							std::string type_str = (*it2)["type"].get<std::string>();
-							property.type = StringToMcpPropertyType(type_str);
-							property.description = (*it2)["description"].get<std::string>();
-							tool.output_schema.emplace_back(property);
-						}
-                        */
-					}
-					tools.emplace_back(tool);
+                    */
 				}
+				if (it->find("outputSchema") != it->end())
+				{
+					auto output_schema_json = (*it)["outputSchema"];
+                    /* Under development...
+                    for (auto it2 = output_schema_json.begin(); it2 != output_schema_json.end(); it2++)
+					{
+						McpProperty property;
+						// property.name = (*it2)["propertyName"].get<std::string>();
+						std::string type_str = (*it2)["type"].get<std::string>();
+						property.type = StringToMcpPropertyType(type_str);
+						property.description = (*it2)["description"].get<std::string>();
+						tool.output_schema.emplace_back(property);
+					}
+                    */
+				}
+				tools.emplace_back(tool);
 			}
 		}
-    }
-    catch (const nlohmann::json::parse_error& e)
-    {
-        return false;
-    }
+	}
 
     return true;
 }
 
 bool McpClientImpl::ToolsCall(std::string name, const std::map<std::string, std::string>& args, nlohmann::json& content)
 {
+    m_request_id++;
+
     auto tool_call = R"(
         {
             "jsonrpc": "2.0",
-            "id": 2,
+            "id": 0,
             "method": "tools/call",
             "params": {
                 "name": "",
@@ -182,29 +186,50 @@ bool McpClientImpl::ToolsCall(std::string name, const std::map<std::string, std:
         }
     )"_json;
 
-	tool_call["params"]["name"] = name;
+    tool_call["id"] = m_request_id;
+    tool_call["params"]["name"] = name;
 	for (auto it = args.begin(); it != args.end(); it++)
 	{
 		tool_call["params"]["arguments"][it->first] = it->second;
 	}
 
-    std::string response;
-	if (!m_transport->SendRequest(tool_call.dump(), response))
+    nlohmann::json response_json;
+	if (!m_transport->SendRequest(
+        tool_call.dump(), 
+        [this, &response_json](const std::string& response)->bool
+        {
+            return this->IsCorrectResponse(response, response_json);
+        }
+    ))
 	{
 		return false;
 	}
 
+	content = response_json["result"]["content"];
+    
+    return true;
+}
+
+bool McpClientImpl::IsCorrectResponse(const std::string& response_str, nlohmann::json& response_json)
+{
     try
     {
-        auto response_json = nlohmann::json::parse(response);
+        response_json = nlohmann::json::parse(response_str);
 
-		content = response_json["result"]["content"];
+        if (!response_json.contains("id"))
+        {
+            return false;
+        }
+        if (response_json["id"] != m_request_id)
+        {
+            return false;
+        }
     }
     catch (const nlohmann::json::parse_error& e)
     {
         return false;
     }
-    
+
     return true;
 }
 

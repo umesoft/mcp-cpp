@@ -26,32 +26,40 @@
 namespace Mcp
 {
 
-std::unique_ptr<McpStdioClientTransport> McpStdioClientTransport::CreateInstance(const std::wstring& filepath)
+std::unique_ptr<McpStdioClientTransport> McpStdioClientTransport::CreateInstance(const std::wstring& filepath, int timeout)
 {
 #ifdef _WIN32
-    return std::make_unique<McpStdioClientTransportImpl_Win32>(filepath);
+    return std::make_unique<McpStdioClientTransportImpl_Win32>(filepath, timeout);
 #else
-    return std::make_unique<McpStdioClientTransportImpl_Posix>(filepath);
+    return std::make_unique<McpStdioClientTransportImpl_Posix>(filepath, timeout);
 #endif
 }
 
-McpStdioClientTransportImpl::McpStdioClientTransportImpl(const std::wstring& filepath)
+McpStdioClientTransportImpl::McpStdioClientTransportImpl(const std::wstring& filepath, int timeout)
 	: m_filepath(filepath)
+	, m_timeout(timeout)
 {
+    const int REQUEST_BUFFER_SIZE = 128 * 1024;
+    m_request_buffer.resize(REQUEST_BUFFER_SIZE);
 }
 
 McpStdioClientTransportImpl::~McpStdioClientTransportImpl()
 {
 }
 
-bool McpStdioClientTransportImpl::Initialize(const std::string& request, std::string& response)
+bool McpStdioClientTransportImpl::Initialize(
+    const std::string& request, 
+    std::function <bool(const std::string& response)> callback
+)
 {
     if (!OnCreateProcess())
     {
         return false;
     }
 
-	if (!OnSendRequest(request, response))
+    m_response_str.clear();
+
+	if (!OnSendRequest(request, callback))
 	{
 		return false;
 	}
@@ -64,14 +72,33 @@ void McpStdioClientTransportImpl::Shutdown()
     OnTerminateProcess();
 }
 
-bool McpStdioClientTransportImpl::SendRequest(const std::string& request, std::string& response)
+bool McpStdioClientTransportImpl::SendRequest(
+    const std::string& request,
+    std::function <bool(const std::string& response)> callback
+)
 {
-    return OnSendRequest(request, response);
+    return OnSendRequest(request, callback);
 }
 
 bool McpStdioClientTransportImpl::SendNotification(const std::string& notification)
 {
     return OnSendNotification(notification);
+}
+
+bool McpStdioClientTransportImpl::AppendResponse(char* response_buffer, int size, std::string& response_str)
+{
+    m_response_str.append(response_buffer, size);
+
+    int pos = m_response_str.find("\n");
+    if (pos <= 0)
+    {
+        return false;
+    }
+
+    response_str = m_response_str.substr(0, pos);
+    m_response_str = m_response_str.substr(pos + 1);
+
+	return true;
 }
 
 }

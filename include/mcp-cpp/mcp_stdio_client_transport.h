@@ -23,7 +23,7 @@ namespace Mcp {
 
 class McpStdioClientTransport : public McpClientTransport {
 public:
-	static std::unique_ptr<McpStdioClientTransport> CreateInstance(const std::wstring& filepath);
+	static std::unique_ptr<McpStdioClientTransport> CreateInstance(const std::wstring& filepath, int timeout = 10 * 1000);
 
 	virtual ~McpStdioClientTransport() {}
 

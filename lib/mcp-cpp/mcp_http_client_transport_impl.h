@@ -33,9 +33,15 @@ public:
 	);
 	virtual ~McpHttpClientTransportImpl();
 
-	virtual bool Initialize(const std::string& request, std::string& response);
+	virtual bool Initialize(
+		const std::string& request,
+		std::function <bool(const std::string& response)> callback
+	);
 	virtual void Shutdown();
-	virtual bool SendRequest(const std::string& request, std::string& response);
+	virtual bool SendRequest(
+		const std::string& request,
+		std::function <bool(const std::string& response)> callback
+	);
 	virtual bool SendNotification(const std::string& notification);
 
 private:

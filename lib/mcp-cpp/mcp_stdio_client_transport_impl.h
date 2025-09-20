@@ -23,21 +23,35 @@ namespace Mcp {
 
 class McpStdioClientTransportImpl : public McpStdioClientTransport {
 public:
-	McpStdioClientTransportImpl(const std::wstring& filepath);
+	McpStdioClientTransportImpl(const std::wstring& filepath, int timeout);
 	virtual ~McpStdioClientTransportImpl();
 
-	virtual bool Initialize(const std::string& request, std::string& response);
+	virtual bool Initialize(
+		const std::string& request,
+		std::function <bool(const std::string& response)> callback
+	);
 	virtual void Shutdown();
-	virtual bool SendRequest(const std::string& request, std::string& response);
+	virtual bool SendRequest(
+		const std::string& request,
+		std::function <bool(const std::string& response)> callback
+	);
 	virtual bool SendNotification(const std::string& notification);
 
 protected:
 	std::wstring m_filepath;
+	std::string m_response_str;
+	std::vector<char> m_request_buffer;
+	int m_timeout;
 
 	virtual bool OnCreateProcess() = 0;
 	virtual void OnTerminateProcess() = 0;
-	virtual bool OnSendRequest(const std::string& request, std::string& response) = 0;
+	virtual bool OnSendRequest(
+		const std::string& request,
+		std::function <bool(const std::string& response)> callback
+	) = 0;
 	virtual bool OnSendNotification(const std::string& notification) = 0;
+
+	bool AppendResponse(char* response_buffer, int size, std::string& response_str);
 };
 
 }

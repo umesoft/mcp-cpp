@@ -22,8 +22,8 @@
 namespace Mcp
 {
 
-McpStdioClientTransportImpl_Posix::McpStdioClientTransportImpl_Posix(const std::wstring& filepath)
-	: McpStdioClientTransportImpl(filepath)
+McpStdioClientTransportImpl_Posix::McpStdioClientTransportImpl_Posix(const std::wstring& filepath, int timeout)
+	: McpStdioClientTransportImpl(filepath, timeout)
     , m_child_pid(-1)
     , m_stdin_fd(-1)
     , m_stdout_fd(-1)
@@ -111,7 +111,10 @@ void McpStdioClientTransportImpl_Posix::OnTerminateProcess()
     }
 }
 
-bool McpStdioClientTransportImpl_Posix::OnSendRequest(const std::string& request, std::string& response)
+bool McpStdioClientTransportImpl_Posix::OnSendRequest(
+	const std::string& request,
+    std::function <bool(const std::string& response)> callback
+)
 {
     if (m_stdin_fd == -1 || m_stdout_fd == -1)
         return false;
@@ -119,15 +122,23 @@ bool McpStdioClientTransportImpl_Posix::OnSendRequest(const std::string& request
     write(m_stdin_fd, request.c_str(), request.size());
     write(m_stdin_fd, "\n", 1);
 
-    char buffer[4096];
-    ssize_t read_size = read(m_stdout_fd, buffer, sizeof(buffer) - 1);
-    if (read_size <=0 )
+	while (true)
     {
-        return false;
-    }
+		ssize_t read_size = read(m_stdout_fd, &m_request_buffer[0], m_request_buffer.size());
+	    if (read_size <= 0)
+	    {
+	        return false;
+	    }
 
-    buffer[read_size] = '\0';
-    response = buffer;
+		std::string response_str;
+        if (AppendResponse(&m_request_buffer[0], (int)read_size, response_str))
+        {
+            if (callback(response_str))
+            {
+                break;
+            }
+        }
+	}
 
 	return true;
 }

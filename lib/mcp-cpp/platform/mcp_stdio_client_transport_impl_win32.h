@@ -25,13 +25,16 @@ namespace Mcp {
 
 class McpStdioClientTransportImpl_Win32 : public McpStdioClientTransportImpl {
 public:
-	McpStdioClientTransportImpl_Win32(const std::wstring& filepath);
+	McpStdioClientTransportImpl_Win32(const std::wstring& filepath, int timeout);
 	virtual ~McpStdioClientTransportImpl_Win32();
 
 protected:
 	virtual bool OnCreateProcess();
 	virtual void OnTerminateProcess();
-	virtual bool OnSendRequest(const std::string& request, std::string& response);
+	virtual bool OnSendRequest(
+		const std::string& request,
+		std::function <bool(const std::string& response)> callback
+	);
 	virtual bool OnSendNotification(const std::string& notification);
 
 private:

@@ -23,13 +23,16 @@ namespace Mcp {
 
 class McpStdioClientTransportImpl_Posix : public McpStdioClientTransport {
 public:
-	McpStdioClientTransportImpl_Posix(const std::wstring& filepath);
+	McpStdioClientTransportImpl_Posix(const std::wstring& filepath, int timeout);
 	virtual ~McpStdioClientTransportImpl_Posix();
 
 protected:
 	virtual bool OnCreateProcess();
 	virtual void OnTerminateProcess();
-	virtual bool OnSendRequest(const std::string& request, std::string& response);
+	virtual bool OnSendRequest(
+		const std::string& request,
+		std::function <bool(const std::string& response)> callback
+	);
 	virtual bool OnSendNotification(const std::string& notification);
 
 private:

@@ -108,7 +108,10 @@ size_t McpHttpClientTransportImpl::WriteCallback(char* ptr, size_t size, size_t 
     return totalSize;
 }
 
-bool McpHttpClientTransportImpl::Initialize(const std::string& request, std::string& response)
+bool McpHttpClientTransportImpl::Initialize(
+    const std::string& request,
+    std::function <bool(const std::string& response)> callback
+)
 {
     m_curl = curl_easy_init();
 
@@ -120,6 +123,7 @@ bool McpHttpClientTransportImpl::Initialize(const std::string& request, std::str
 
     m_mcp_session_id = "";
 
+	std::string response;
     int status_code = 0;
     if (!Send(request, response, status_code))
     {
@@ -182,7 +186,7 @@ bool McpHttpClientTransportImpl::Initialize(const std::string& request, std::str
         return false;
     }
 
-    return true;
+    return callback(response);
 }
 
 void McpHttpClientTransportImpl::Shutdown()
@@ -196,10 +200,19 @@ void McpHttpClientTransportImpl::Shutdown()
     m_mcp_session_id = "";
 }
 
-bool McpHttpClientTransportImpl::SendRequest(const std::string& request, std::string& response)
+bool McpHttpClientTransportImpl::SendRequest(
+    const std::string& request,
+    std::function <bool(const std::string& response)> callback
+)
 {
+	std::string response;
 	int status_code = 0;
-    return Send(request, response, status_code);
+    if (!Send(request, response, status_code))
+    {
+        return false;
+    }
+
+    return callback(response);
 }
 
 bool McpHttpClientTransportImpl::SendNotification(const std::string& notification)

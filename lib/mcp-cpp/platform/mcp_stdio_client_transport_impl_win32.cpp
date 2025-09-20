@@ -20,8 +20,8 @@
 namespace Mcp
 {
 
-McpStdioClientTransportImpl_Win32::McpStdioClientTransportImpl_Win32(const std::wstring& filepath)
-	: McpStdioClientTransportImpl(filepath)
+McpStdioClientTransportImpl_Win32::McpStdioClientTransportImpl_Win32(const std::wstring& filepath, int timeout)
+	: McpStdioClientTransportImpl(filepath, timeout)
     , m_hStdOutRead(NULL)
     , m_hStdInWrite(NULL)
     , m_hProcess(NULL)
@@ -113,18 +113,32 @@ void McpStdioClientTransportImpl_Win32::OnTerminateProcess()
     }
 }
 
-bool McpStdioClientTransportImpl_Win32::OnSendRequest(const std::string& request, std::string& response)
+bool McpStdioClientTransportImpl_Win32::OnSendRequest(
+    const std::string& request,
+    std::function <bool(const std::string& response)> callback
+)
 {
     DWORD written;
     WriteFile(m_hStdInWrite, request.c_str(), (DWORD)request.size(), &written, NULL);
     WriteFile(m_hStdInWrite, "\n", 1, &written, NULL);
 
-    char buffer[4096];
-    DWORD read;
-    ReadFile(m_hStdOutRead, buffer, sizeof(buffer) - 1, &read, NULL);
-    buffer[read] = '\0';
+    while (true)
+    {
+        DWORD read = 0;
+        if (!ReadFile(m_hStdOutRead, &m_request_buffer[0], m_request_buffer.size(), &read, NULL))
+        {
+            return false;
+        }
 
-    response = buffer;
+		std::string response_str;
+        if (AppendResponse(&m_request_buffer[0], read, response_str))
+        {
+            if (callback(response_str))
+            {
+                break;
+            }
+        }
+    }
 
 	return true;
 }

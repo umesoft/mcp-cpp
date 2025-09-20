@@ -35,7 +35,11 @@ public:
 private:
 	std::string m_name;
 	std::string m_version;
+	int m_request_id;
+
 	std::shared_ptr<McpClientTransport> m_transport;
+
+	bool IsCorrectResponse(const std::string& response_str, nlohmann::json& response_json);
 };
 
 }
