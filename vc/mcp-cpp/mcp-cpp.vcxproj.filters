@@ -101,6 +101,9 @@
     <ClInclude Include="..\..\lib\mcp-cpp\platform\mcp_stdio_client_transport_impl_win32.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\lib\mcp-cpp\mcp_common.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

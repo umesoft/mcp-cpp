@@ -16,19 +16,29 @@
  */
 
 #include "mcp_http_client_transport_impl.h"
+#include "mcp_common.h"
 
 #include <string.h>
 
 namespace Mcp {
 
-std::unique_ptr<McpHttpClientTransport> McpHttpClientTransport::CreateInstance(const std::string& host, const std::string& entry_point)
+std::unique_ptr<McpHttpClientTransport> McpHttpClientTransport::CreateInstance(
+    const std::string& host, 
+    const std::string& entry_point,
+    std::function <void(const std::string& url, std::string& token)> auth_callback
+)
 {
-	return std::make_unique<McpHttpClientTransportImpl>(host, entry_point);
+	return std::make_unique<McpHttpClientTransportImpl>(host, entry_point, auth_callback);
 }
 
-McpHttpClientTransportImpl::McpHttpClientTransportImpl(const std::string& host, const std::string& entry_point)
+McpHttpClientTransportImpl::McpHttpClientTransportImpl(
+    const std::string& host, 
+    const std::string& entry_point,
+    std::function <void(const std::string& auth_url, std::string& token)> auth_callback
+)
 	: m_host(host)
 	, m_entry_point(entry_point)
+	, m_auth_callback(auth_callback)
     , m_curl(nullptr)
 {
 	m_url = m_host + m_entry_point;
@@ -59,8 +69,10 @@ size_t McpHttpClientTransportImpl::HeaderCallback(char* ptr, size_t size, size_t
         if (pos > 0)
         {
             std::string key = header_line.substr(0, pos);
+            string_to_lower(key);
+
             std::string value = header_line.substr(pos + 2);
-            self->m_headers[key] = value;
+            self->m_headers[key] = string_trim(value);
         }
     }
 
@@ -99,8 +111,115 @@ bool McpHttpClientTransportImpl::Initialize(const std::string& request, std::str
     curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this);
     curl_easy_setopt(m_curl, CURLOPT_TCP_KEEPALIVE, 1L);
 
+    m_authorization = "";
+    m_mcp_session_id = "";
+
+    int status_code = 0;
+    if (!Send(request, response, status_code))
+    {
+        if (status_code == 401)
+        {
+            auto it = m_headers.find("www-authenticate");
+            if (it != m_headers.end())
+            {
+                std::string www_authenticate = it->second;
+                auto url = ExtractResourceMetadata(www_authenticate);
+                if (!url.has_value())
+                {
+                    return false;
+                }
+
+                std::string token = "";
+
+                if (m_auth_callback != nullptr)
+                {
+                    m_auth_callback(*url, token);
+                }
+                else
+                {
+                    Authenticate(*url, token);
+                }
+
+                if (token.empty())
+                {
+                    return false;
+                }
+
+                m_authorization = "Authorization: Bearer " + token;
+
+                status_code = 0;
+                if (!Send(request, response, status_code))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+		else
+		{
+			return false;
+		}
+    }
+
+    auto it = m_headers.find("mcp-session-id");
+    if (it != m_headers.end())
+	{
+        m_mcp_session_id = "Mcp-Session-Id: " + it->second;
+	}
+    else
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void McpHttpClientTransportImpl::Shutdown()
+{
+    if (m_curl != nullptr)
+    {
+        curl_easy_cleanup(m_curl);
+        m_curl = nullptr;
+    }
+
+    m_authorization = "";
+    m_mcp_session_id = "";
+}
+
+bool McpHttpClientTransportImpl::SendRequest(const std::string& request, std::string& response)
+{
+	int status_code = 0;
+    return Send(request, response, status_code);
+}
+
+bool McpHttpClientTransportImpl::SendNotification(const std::string& notification)
+{
+	std::string response;
+    int status_code = 0;
+    return Send(notification, response, status_code);
+}
+
+bool McpHttpClientTransportImpl::Send(const std::string& request, std::string& response, int& status_code)
+{
+    if (m_curl == nullptr)
+    {
+        return false;
+    }
     struct curl_slist* headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
+
+    if (!m_authorization.empty())
+    {
+        headers = curl_slist_append(headers, m_authorization.c_str());
+    }
+    if (!m_mcp_session_id.empty())
+    {
+        headers = curl_slist_append(headers, m_mcp_session_id.c_str());
+    }
+
     curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, headers);
 
     curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str());
@@ -115,111 +234,75 @@ bool McpHttpClientTransportImpl::Initialize(const std::string& request, std::str
     m_response_buffer = "";
 
     CURLcode  res = curl_easy_perform(m_curl);
+
+    curl_slist_free_all(headers);
+
     if (res != CURLE_OK)
     {
-        curl_slist_free_all(headers);
         return false;
     }
 
-    curl_slist_free_all(headers);
-
-	if (m_headers.find("mcp-session-id") != m_headers.end())
-	{
-		m_session_id = "mcp-session-id: " + m_headers["mcp-session-id"];
-	}
-
-	response = m_response.substr(21);       // #TODO#
-
-    return true;
-}
-
-void McpHttpClientTransportImpl::Shutdown()
-{
-    if (m_curl != nullptr)
-    {
-        curl_easy_cleanup(m_curl);
-        m_curl = nullptr;
-    }
-}
-
-bool McpHttpClientTransportImpl::SendRequest(const std::string& request, std::string& response)
-{
-	if (m_curl == nullptr)
-	{
-		return false;
-	}
-    if (m_session_id.empty())
-    {
-        return false;
-    }
-
-	struct curl_slist* headers = NULL;
-	headers = curl_slist_append(headers, "Content-Type: application/json");
-	headers = curl_slist_append(headers, m_session_id.c_str());
-	curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, headers);
-
-	curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str());
-
-	curl_easy_setopt(m_curl, CURLOPT_POST, 1L);
-	curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE_LARGE, request.length());
-	curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, request.c_str());
-
-    m_headers.clear();
-    m_header_buffer = "";
-    m_response = "";
-    m_response_buffer = "";
-
-	CURLcode  res = curl_easy_perform(m_curl);
-	if (res != CURLE_OK)
-	{
-        curl_slist_free_all(headers);
-        return false;
-	}
-
-    response = m_response.substr(21);       // #TODO#
-
-    curl_slist_free_all(headers);
-
-    return true;
-}
-
-bool McpHttpClientTransportImpl::SendNotification(const std::string& notification)
-{
-    if (m_curl == nullptr)
-    {
-        return false;
-    }
-    if (m_session_id.empty())
-    {
-        return false;
-    }
-
-    struct curl_slist* headers = NULL;
-    headers = curl_slist_append(headers, "Content-Type: application/json");
-    headers = curl_slist_append(headers, m_session_id.c_str());
-    curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, headers);
-
-    curl_easy_setopt(m_curl, CURLOPT_URL, m_url.c_str());
-
-    curl_easy_setopt(m_curl, CURLOPT_POST, 1L);
-    curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE_LARGE, notification.length());
-    curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, notification.c_str());
-
-    m_headers.clear();
-    m_header_buffer = "";
-    m_response = "";
-    m_response_buffer = "";
-
-    CURLcode  res = curl_easy_perform(m_curl);
+    long http_code;
+    res = curl_easy_getinfo(m_curl, CURLINFO_HTTP_CODE, &http_code);
     if (res != CURLE_OK)
     {
-        curl_slist_free_all(headers);
         return false;
     }
 
-    curl_slist_free_all(headers);
+    status_code = (int)http_code;
+
+    if (status_code != 200)
+    {
+        return false;
+    }
+
+    const std::string prefix = "event: message\ndata: ";
+    if (m_response.rfind(prefix, 0) != 0) {
+        return false;
+    }
+    response = m_response.substr(prefix.size());
 
     return true;
+}
+
+std::optional<std::string> McpHttpClientTransportImpl::ExtractResourceMetadata(const std::string& header)
+{
+    const std::string prefix = "Bearer ";
+    if (header.rfind(prefix, 0) != 0) {
+        return std::nullopt;
+    }
+
+    const std::string key = "resource_metadata=\"";
+    size_t start = header.find(key, prefix.size());
+    if (start == std::string::npos) {
+        return std::nullopt;
+    }
+
+    start += key.size();
+    size_t end = header.find('"', start);
+    if (end == std::string::npos) {
+        return std::nullopt;
+    }
+
+    return header.substr(start, end - start);
+}
+
+void McpHttpClientTransportImpl::Authenticate(const std::string& url, std::string& token)
+{
+    // retrive oauth-protected-resource
+    // ...
+
+    // register dynamic client
+    // ...
+
+    // create callback http server
+    // ...
+
+	// open authorization url in browser
+    // ...
+
+	// wait for token
+    // ...
 }
 
 }

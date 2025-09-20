@@ -34,6 +34,7 @@
     <ClInclude Include="..\..\include\mcp-cpp\mcp_stdio_server_transport.h" />
     <ClInclude Include="..\..\include\mcp-cpp\mcp_type.h" />
     <ClInclude Include="..\..\lib\mcp-cpp\mcp_client_impl.h" />
+    <ClInclude Include="..\..\lib\mcp-cpp\mcp_common.h" />
     <ClInclude Include="..\..\lib\mcp-cpp\mcp_http_client_transport_impl.h" />
     <ClInclude Include="..\..\lib\mcp-cpp\mcp_http_server_transport_impl.h" />
     <ClInclude Include="..\..\lib\mcp-cpp\mcp_server_impl.h" />

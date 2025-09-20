@@ -21,6 +21,7 @@
 #include "mongoose.c"
 
 #include "mcp_http_server_transport_impl.h"
+#include "mcp_common.h"
 #include "jwt-cpp/jwt.h"
 
 namespace Mcp {
@@ -174,19 +175,21 @@ void McpHttpServerTransportImpl::cbEvHander(void* connection, int event_code, vo
 			std::string auth_token = "";
 			std::string session_id = "";
 
-			mg_str authorization = mg_str_s("authorization");
-			mg_str mcp_session_id = mg_str_s("mcp-session-id");
 			for (int i = 0; i < MG_MAX_HTTP_HEADERS; i++)
 			{
 				if (hm->headers[i].name.buf == nullptr)
 				{
 					break;
 				}
-				if (mg_strcasecmp(hm->headers[i].name, authorization) == 0)
+
+				std::string key = std::string(hm->headers[i].name.buf, hm->headers[i].name.len);
+				string_to_lower(key);
+
+				if (key == "authorization")
 				{
 					auth_token.assign(hm->headers[i].value.buf, hm->headers[i].value.len);
 				}
-				else if (mg_strcasecmp(hm->headers[i].name, mcp_session_id) == 0)
+				else if (key == "mcp-session-id")
 				{
 					session_id.assign(hm->headers[i].value.buf, hm->headers[i].value.len);
 				}

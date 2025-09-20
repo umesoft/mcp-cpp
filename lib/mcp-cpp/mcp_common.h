@@ -15,27 +15,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "mcp_client_transport.h"
-
-#include <functional>
-#include <string>
+#pragma
 
 namespace Mcp {
 
-class McpHttpClientTransport : public McpClientTransport {
-public:
-	static std::unique_ptr<McpHttpClientTransport> CreateInstance(
-		const std::string& host, 
-		const std::string& entry_point,
-		std::function <void(const std::string& url, std::string& token)> auth_callback = nullptr
-	);
-	
-	virtual ~McpHttpClientTransport() {}
+inline void string_to_lower(std::string& value)
+{
+    std::transform(value.cbegin(), value.cend(), value.begin(), tolower);
+}
 
-protected:
-	McpHttpClientTransport() {}
-};
+inline std::string string_trim(const std::string& str)
+{
+    size_t first = str.find_first_not_of(' ');
+    if (std::string::npos == first)
+    {
+        return str;
+    }
+
+    size_t last = str.find_last_not_of(' ');
+
+    return str.substr(first, (last - first + 1));
+}
 
 }

@@ -28,7 +28,11 @@ namespace Mcp {
 
 class McpHttpClientTransportImpl : public McpHttpClientTransport {
 public:
-	McpHttpClientTransportImpl(const std::string& host, const std::string& entry_point);
+	McpHttpClientTransportImpl(
+		const std::string& host, 
+		const std::string& entry_point,
+		std::function <void(const std::string& url, std::string& token)> auth_callback = nullptr
+	);
 	virtual ~McpHttpClientTransportImpl();
 
 	virtual bool Initialize(const std::string& request, std::string& response);
@@ -41,6 +45,8 @@ private:
 	std::string m_entry_point;
 	std::string m_url;
 
+	std::function <void(const std::string& url, std::string& token)> m_auth_callback;
+
 	CURL* m_curl;
 
 	std::map<std::string, std::string> m_headers;
@@ -48,10 +54,17 @@ private:
 	std::string m_response;
 	std::string m_response_buffer;
 
-	std::string m_session_id;
+	std::string m_authorization;
+	std::string m_mcp_session_id;
 
 	static size_t HeaderCallback(char* ptr, size_t size, size_t nmemb, void* userdata);
 	static size_t WriteCallback(char* ptr, size_t size, size_t nmemb, void* userdata);
+
+	bool Send(const std::string& request, std::string& response, int& status_code);
+
+	std::optional<std::string> ExtractResourceMetadata(const std::string& header);
+
+	void Authenticate(const std::string& url, std::string& token);
 };
 
 }
