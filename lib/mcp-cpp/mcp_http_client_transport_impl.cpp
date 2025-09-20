@@ -23,15 +23,17 @@ namespace Mcp {
 std::unique_ptr<McpHttpClientTransport> McpHttpClientTransport::CreateInstance(
     const std::string& host, 
     const std::string& entry_point,
+    const std::string& token,
     std::function <void(const std::string& url, std::string& token)> auth_callback
 )
 {
-	return std::make_unique<McpHttpClientTransportImpl>(host, entry_point, auth_callback);
+	return std::make_unique<McpHttpClientTransportImpl>(host, entry_point, token, auth_callback);
 }
 
 McpHttpClientTransportImpl::McpHttpClientTransportImpl(
     const std::string& host, 
     const std::string& entry_point,
+    const std::string& token,
     std::function <void(const std::string& auth_url, std::string& token)> auth_callback
 )
 	: m_host(host)
@@ -40,10 +42,17 @@ McpHttpClientTransportImpl::McpHttpClientTransportImpl(
     , m_curl(nullptr)
 {
 	m_url = m_host + m_entry_point;
+
+    UpdateAuthorization(token);
 }
 
 McpHttpClientTransportImpl::~McpHttpClientTransportImpl()
 {
+}
+
+void McpHttpClientTransportImpl::UpdateAuthorization(const std::string& token)
+{
+    m_authorization = token.empty() ? "" : "Authorization: Bearer " + token;
 }
 
 size_t McpHttpClientTransportImpl::HeaderCallback(char* ptr, size_t size, size_t nmemb, void* userdata)
@@ -109,7 +118,6 @@ bool McpHttpClientTransportImpl::Initialize(const std::string& request, std::str
     curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, this);
     curl_easy_setopt(m_curl, CURLOPT_TCP_KEEPALIVE, 1L);
 
-    m_authorization = "";
     m_mcp_session_id = "";
 
     int status_code = 0;
@@ -117,6 +125,8 @@ bool McpHttpClientTransportImpl::Initialize(const std::string& request, std::str
     {
         if (status_code == 401)
         {
+            m_authorization = "";
+
             auto it = m_headers.find("www-authenticate");
             if (it != m_headers.end())
             {
@@ -143,7 +153,7 @@ bool McpHttpClientTransportImpl::Initialize(const std::string& request, std::str
                     return false;
                 }
 
-                m_authorization = "Authorization: Bearer " + token;
+                UpdateAuthorization(token);
 
                 status_code = 0;
                 if (!Send(request, response, status_code))
@@ -183,7 +193,6 @@ void McpHttpClientTransportImpl::Shutdown()
         m_curl = nullptr;
     }
 
-    m_authorization = "";
     m_mcp_session_id = "";
 }
 

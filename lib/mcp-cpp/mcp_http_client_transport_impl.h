@@ -28,6 +28,7 @@ public:
 	McpHttpClientTransportImpl(
 		const std::string& host, 
 		const std::string& entry_point,
+		const std::string& token,
 		std::function <void(const std::string& url, std::string& token)> auth_callback = nullptr
 	);
 	virtual ~McpHttpClientTransportImpl();
@@ -52,6 +53,9 @@ private:
 	std::string m_response_buffer;
 
 	std::string m_authorization;
+
+	void UpdateAuthorization(const std::string& token);
+
 	std::string m_mcp_session_id;
 
 	static size_t HeaderCallback(char* ptr, size_t size, size_t nmemb, void* userdata);

@@ -26,6 +26,7 @@ public:
 	static std::unique_ptr<McpHttpClientTransport> CreateInstance(
 		const std::string& host, 
 		const std::string& entry_point,
+		const std::string& token = "",
 		std::function <void(const std::string& url, std::string& token)> auth_callback = nullptr
 	);
 	
