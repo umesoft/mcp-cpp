@@ -41,5 +41,6 @@ Use cmake or vc.
 
 - JWT++ (https://github.com/Thalhammer/jwt-cpp)
 - JSON for Modern C++ (https://github.com/nlohmann/json)
+- libcurl
 - Mongoose (https://github.com/cesanta/mongoose)
 - OpenSSL
