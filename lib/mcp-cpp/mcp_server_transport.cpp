@@ -28,11 +28,17 @@ McpServerTransport::~McpServerTransport()
 {
 }
 
-void McpServerTransport::Open(Handler* handler)
+bool McpServerTransport::Open(Handler* handler)
 {
 	m_handler = handler;
 
-	OnOpen();
+	if (!OnOpen())
+	{
+		m_handler = nullptr;
+		return false;
+	}
+
+	return true;
 }
 
 void McpServerTransport::Close()

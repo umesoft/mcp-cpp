@@ -34,6 +34,8 @@ public:
 		) = 0;
 
 	virtual bool Run(std::unique_ptr<McpServerTransport> transport) = 0;
+	virtual void Stop() = 0;
+	virtual bool IsRunning() = 0;
 
 	virtual void SendResponse(const std::string& session_id, const nlohmann::json& response) = 0;
 	virtual void SendError(const std::string& session_id, int code, const std::string& message) = 0;

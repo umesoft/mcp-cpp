@@ -36,7 +36,7 @@ private:
 	std::mutex m_request_mutex;
 	std::condition_variable m_request_cv;
 
-	virtual void OnOpen();
+	virtual bool OnOpen();
 	virtual bool OnProcRequest();
 	virtual void OnSendResponse(const std::string& session_id, const std::string& response_str, bool is_finish);
 };

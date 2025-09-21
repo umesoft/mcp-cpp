@@ -28,6 +28,7 @@ McpServerImpl::McpServerImpl(const std::string& server_name, const std::string& 
 	: m_server_name(server_name)
 	, m_version(version)
 	, m_transport(nullptr)
+	, m_is_running(false)
 {
 }
 
@@ -54,21 +55,42 @@ void McpServerImpl::AddTool(
 bool McpServerImpl::Run(std::unique_ptr<McpServerTransport> transport)
 {
 	m_transport = std::move(transport);
-
 	m_transport->Open(this);
 
-	while (true)
+	m_is_running = true;
+
+	m_worker = std::make_unique<std::thread>([this]
 	{
-		if (!m_transport->ProcRequest())
+		while (m_is_running)
 		{
-			break;
+			if (!m_transport->ProcRequest())
+			{
+				break;
+			}
 		}
+	});
+
+	return true;
+}
+
+void McpServerImpl::Stop()
+{
+	if (!m_transport)
+	{
+		return;
 	}
+
+	m_is_running = false;
+	m_worker->join();
+	m_worker.reset();
 
 	m_transport->Close();
 	m_transport.reset();
+}
 
-	return true;
+bool McpServerImpl::IsRunning()
+{
+	return m_is_running;
 }
 
 void McpServerImpl::OnClose(const std::string& session_id)

@@ -41,23 +41,18 @@ McpStdioServerTransportImpl::~McpStdioServerTransportImpl()
 	delete[] m_request_buffer;
 }
 
-void McpStdioServerTransportImpl::OnOpen()
+bool McpStdioServerTransportImpl::OnOpen()
 {
 	auto request_worker = std::thread([this]
 	{
-		fprintf(stderr, "+++ OnOpen +++\n");
-
 		while (true)
 		{
 			if (fgets(m_request_buffer, m_max_request_size, stdin) == nullptr)
 			{
-				fprintf(stderr, "Detect: stdin - close\n");
 				m_stdin_close = true;
 				m_request_cv.notify_one();
 				break;
 			}
-
-			fprintf(stderr, "recv: %s\n", m_request_buffer);
 
 			int pos = strlen(m_request_buffer);
 			if (m_request_buffer[pos - 1] == '\n')
@@ -71,12 +66,14 @@ void McpStdioServerTransportImpl::OnOpen()
 		}
 	});
 	request_worker.detach();
+
+	return true;
 }
 
 bool McpStdioServerTransportImpl::OnProcRequest()
 {
 	std::unique_lock<std::mutex> lock(m_request_mutex);
-	if (m_request_cv.wait_for(lock, std::chrono::milliseconds(100)) == std::cv_status::timeout)
+	if (m_request_cv.wait_for(lock, std::chrono::milliseconds(50)) == std::cv_status::timeout)
 	{
 		return true;
 	}

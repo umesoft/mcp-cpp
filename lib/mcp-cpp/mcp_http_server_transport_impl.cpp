@@ -39,8 +39,6 @@ McpHttpServerTransportImpl::McpHttpServerTransportImpl(const std::string& host, 
 	, m_session_timeout(session_timeout)
 	, m_use_tls(false)
 	, m_use_authorization(false)
-	, m_mgr(nullptr)
-	, m_timer(nullptr)
 {
 }
 
@@ -78,27 +76,24 @@ void McpHttpServerTransportImpl::SetAuthorization(const std::string& authorizati
 	}
 }
 
-void McpHttpServerTransportImpl::OnOpen()
+bool McpHttpServerTransportImpl::OnOpen()
 {
 	UpdateUrl();
 
-	mg_mgr* s_mgr = nullptr;
-	s_mgr = new mg_mgr();
-	mg_mgr_init(s_mgr);
+	mg_mgr_init(&m_mgr);
 
-	mg_timer* s_timer = nullptr;
-	s_timer = new mg_timer();
-	mg_timer_init(&s_mgr->timers, s_timer, m_session_timeout, MG_TIMER_REPEAT, (mg_timer_handler_t)McpHttpServerTransportImpl::cbTimerHandler, this);
+	mg_timer_init(&m_mgr.timers, &m_timer, m_session_timeout, MG_TIMER_REPEAT, (mg_timer_handler_t)McpHttpServerTransportImpl::cbTimerHandler, this);
 
-	m_mgr = s_mgr;
-	m_timer = s_timer;
-
-	mg_http_listen(
-		s_mgr,
+	if (mg_http_listen(
+		&m_mgr,
 		m_host.c_str(),
 		(mg_event_handler_t)cbEvHander,
-		this
-	);
+		this) == nullptr)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 void McpHttpServerTransportImpl::UpdateUrl()
@@ -117,22 +112,13 @@ void McpHttpServerTransportImpl::UpdateUrl()
 
 void McpHttpServerTransportImpl::OnClose()
 {
-	mg_mgr* s_mgr = (mg_mgr*)m_mgr;
-	mg_timer* s_timer = (mg_timer*)m_timer;
-
-	mg_timer_free(&s_mgr->timers, s_timer);
-	m_timer = nullptr;
-
-	mg_mgr_free(s_mgr);
-	m_mgr = nullptr;
+	mg_timer_free(&m_mgr.timers, &m_timer);
+	mg_mgr_free(&m_mgr);
 }
 
 bool McpHttpServerTransportImpl::OnProcRequest()
 {
-	mg_mgr* s_mgr = (mg_mgr*)m_mgr;
-
-	mg_mgr_poll(s_mgr, 100);
-
+	mg_mgr_poll(&m_mgr, 50);
 	return true;
 }
 

@@ -130,5 +130,21 @@ int main()
 
 	server->Run(std::move(transport));
 
+#ifdef USE_HTTP_TRANSPORT
+	getchar();
+#else
+	while (true)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+		if (!server->IsRunning())
+		{
+			break;
+		}
+	}
+#endif
+
+	server->Stop();
+
 	return 0;
 }

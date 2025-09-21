@@ -48,7 +48,7 @@ private:
 	std::string m_authorization_servers;
 	std::string m_scopes_supported;
 
-	virtual void OnOpen();
+	virtual bool OnOpen();
 	virtual void OnClose();
 
 	std::string m_url;
@@ -58,8 +58,8 @@ private:
 	virtual bool OnProcRequest();
 	virtual void OnSendResponse(const std::string& session_id, const std::string& notification_str, bool is_finish);
 
-	void* m_mgr;
-	void* m_timer;
+	mg_mgr m_mgr;
+	mg_timer m_timer;
 
 	static void cbEvHander(void* connection, int event_code, void* event_data);
 	static void cbTimerHandler(void* timer_data);

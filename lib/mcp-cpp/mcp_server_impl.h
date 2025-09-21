@@ -32,6 +32,8 @@ public:
 		);
 
 	virtual bool Run(std::unique_ptr<McpServerTransport> transport);
+	virtual void Stop();
+	virtual bool IsRunning();
 
 	virtual void SendResponse(const std::string& session_id, const nlohmann::json& response);
 	virtual void SendError(const std::string& session_id, int code, const std::string& message);
@@ -58,6 +60,9 @@ private:
 	std::unique_ptr<McpServerTransport> m_transport;
 
 	std::map<std::string, int> m_request_id;
+
+	std::unique_ptr<std::thread> m_worker;
+	bool m_is_running;
 
 	void OnInitialize(const std::string& session_id, const nlohmann::json& request);
 	void OnLoggingSetLevel(const std::string& session_id, const nlohmann::json& request);
