@@ -21,14 +21,13 @@ The following features have been implemented:
 The following features have been implemented:
 
 - **Lifecycle** (Initialize ～ Shutdown)
-- **Transport** (stdio)  
+- **Transport** (stdio & Streamable HTTP)  
 - **Tools**
   - List
   - Call
 
 Now developping:
 
-- **Transport** (Streamable HTTP) 
 - **Authorization**
 - **Tools**
   - Notification  
