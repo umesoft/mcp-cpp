@@ -40,6 +40,8 @@ private:
 	std::shared_ptr<McpClientTransport> m_transport;
 
 	bool IsCorrectResponse(const std::string& response_str, nlohmann::json& response_json);
+
+	void ParseSchema(const nlohmann::json& schema_json, std::string schema_tag, std::vector<McpProperty>& properties);
 };
 
 }

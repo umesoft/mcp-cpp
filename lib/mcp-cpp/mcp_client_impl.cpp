@@ -139,103 +139,64 @@ bool McpClientImpl::ToolsList(std::vector<McpTool>& tools)
 				}
                 tool.description = it->value("description", "");
 
-				auto input_schema_it = it->find("inputSchema");
-                if (input_schema_it != it->end())
-				{
-					std::set<std::string> required_properties;
-                    auto required_it = input_schema_it->find("required");
-                    for (auto it2 = required_it->begin(); it2 != required_it->end(); it2++)
-					{
-                        required_properties.insert(*it2);
-                    }
+                ParseSchema(*it, "inputSchema", tool.input_schema);
+                ParseSchema(*it, "outputSchema", tool.output_schema);
 
-                    auto properties_it = input_schema_it->find("properties");
-                    if (properties_it != input_schema_it->end())
-                    {
-                        for (auto it2 = properties_it->begin(); it2 != properties_it->end(); it2++)
-                        {
-                            McpProperty property;
-
-                            property.name = it2.key();
-                            if (property.name.empty())
-                            {
-                                continue;
-                            }
-
-                            std::string type_str = it2->value("type", "");
-                            property.type = StringToMcpPropertyType(type_str);
-                            if (property.type == MCP_PROPERTY_TYPE_UNKNOWN)
-                            {
-                                continue;
-                            }
-
-                            property.description = it2->value("description", "");
-
-							if (required_properties.find(property.name) != required_properties.end())
-							{
-								property.required = true;
-							}
-							else
-							{
-								property.required = false;
-							}
-
-                            tool.input_schema.emplace_back(property);
-                        }
-                    }
-				}
-
-                auto output_schema_it = it->find("outputSchema");
-                if (output_schema_it != it->end())
-				{
-                    std::set<std::string> required_properties;
-                    auto required_it = output_schema_it->find("required");
-                    for (auto it2 = required_it->begin(); it2 != required_it->end(); it2++)
-                    {
-                        required_properties.insert(*it2);
-                    }
-
-                    auto properties_it = output_schema_it->find("properties");
-                    if (properties_it != output_schema_it->end())
-                    {
-                        for (auto it2 = properties_it->begin(); it2 != properties_it->end(); it2++)
-                        {
-                            McpProperty property;
-
-                            property.name = it2.key();
-                            if (property.name.empty())
-                            {
-                                continue;
-                            }
-
-                            std::string type_str = it2->value("type", "");
-                            property.type = StringToMcpPropertyType(type_str);
-                            if (property.type == MCP_PROPERTY_TYPE_UNKNOWN)
-                            {
-                                continue;
-                            }
-
-                            property.description = it2->value("description", "");
-
-                            if (required_properties.find(property.name) != required_properties.end())
-                            {
-                                property.required = true;
-                            }
-                            else
-                            {
-                                property.required = false;
-                            }
-
-                            tool.output_schema.emplace_back(property);
-                        }
-                    }
-                }
 				tools.emplace_back(tool);
 			}
 		}
 	}
 
     return true;
+}
+
+void McpClientImpl::ParseSchema(const nlohmann::json& schema_json, std::string schema_tag, std::vector<McpProperty>& properties)
+{
+    auto input_schema_it = schema_json.find(schema_tag);
+    if (input_schema_it != schema_json.end())
+    {
+        std::set<std::string> required_properties;
+        auto required_it = input_schema_it->find("required");
+        for (auto it2 = required_it->begin(); it2 != required_it->end(); it2++)
+        {
+            required_properties.insert(*it2);
+        }
+
+        auto properties_it = input_schema_it->find("properties");
+        if (properties_it != input_schema_it->end())
+        {
+            for (auto it2 = properties_it->begin(); it2 != properties_it->end(); it2++)
+            {
+                McpProperty property;
+
+                property.name = it2.key();
+                if (property.name.empty())
+                {
+                    continue;
+                }
+
+                std::string type_str = it2->value("type", "");
+                property.type = StringToMcpPropertyType(type_str);
+                if (property.type == MCP_PROPERTY_TYPE_UNKNOWN)
+                {
+                    continue;
+                }
+
+                property.description = it2->value("description", "");
+
+                if (required_properties.find(property.name) != required_properties.end())
+                {
+                    property.required = true;
+                }
+                else
+                {
+                    property.required = false;
+                }
+
+                properties.emplace_back(property);
+            }
+        }
+    }
 }
 
 bool McpClientImpl::ToolsCall(std::string name, const std::map<std::string, std::string>& args, nlohmann::json& content)
