@@ -8,13 +8,14 @@ The following features have been implemented:
 
 - **Lifecycle** (Initialize ～ Shutdown)  
 - **Transport** (stdio & Streamable HTTP)  
+- **Authorization**
 - **Utilities** (Ping)  
 - **Tools**
   - List
   - Call
   - Notification  
   - OutputSchema & structuredContent  
-
+  
 ### Client
 
 The following features have been implemented:
