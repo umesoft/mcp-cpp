@@ -17,7 +17,9 @@
 
 #include "mcp_stdio_client_transport_impl_posix.h"
 
+#include <sys/select.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 namespace Mcp
 {
@@ -34,7 +36,7 @@ McpStdioClientTransportImpl_Posix::~McpStdioClientTransportImpl_Posix()
 {
 }
 
-bool McpStdioClientTransportImpl_Win32::OnCreateProcess()
+bool McpStdioClientTransportImpl_Win32::OnCreateProcess(const std::wstring& filepath)
 {
     int stdin_pipe[2];
     int stdout_pipe[2];
@@ -62,7 +64,7 @@ bool McpStdioClientTransportImpl_Win32::OnCreateProcess()
 
         std::string exe_path;
         {
-            std::wstring ws = m_filepath;
+            std::wstring ws = filepath;
             std::vector<char> buf(ws.size() * 4 + 1);
             std::wcstombs(buf.data(), ws.c_str(), buf.size());
             exe_path = buf.data();
@@ -111,47 +113,59 @@ void McpStdioClientTransportImpl_Posix::OnTerminateProcess()
     }
 }
 
-bool McpStdioClientTransportImpl_Posix::OnSendRequest(
-	const std::string& request,
-    std::function <bool(const std::string& response)> callback
-)
+bool McpStdioClientTransportImpl_Posix::OnSend(const std::string& request)
 {
-    if (m_stdin_fd == -1 || m_stdout_fd == -1)
-        return false;
+    size_t total = 0;
+    const char* data = request.c_str();
+    size_t len = request.size();
 
-    write(m_stdin_fd, request.c_str(), request.size());
-    write(m_stdin_fd, "\n", 1);
-
-	while (true)
+    while (total < len)
     {
-		ssize_t read_size = read(m_stdout_fd, &m_request_buffer[0], m_request_buffer.size());
-	    if (read_size <= 0)
-	    {
-	        return false;
-	    }
-
-		std::string response_str;
-        if (AppendResponse(&m_request_buffer[0], (int)read_size, response_str))
+        ssize_t written = write(m_stdin_fd, data + total, len - total);
+        if (written < 0)
         {
-            if (callback(response_str))
+            if (errno == EINTR)
             {
-                break;
+                continue;
             }
+            return false;
         }
-	}
-
-	return true;
+        if (written == 0)
+        {
+            return false;
+        }
+        total += (size_t)written;
+    }
+    
+    return true;
 }
 
-bool McpStdioClientTransportImpl_Posix::OnSendNotification(const std::string& request)
+ssize_t McpStdioClientTransportImpl_Posix::OnRecv(std::vector<char>& buffer)
 {
-    if (m_stdin_fd == -1)
-        return false;
+    fd_set rfds;
+    FD_ZERO(&rfds);
+    FD_SET(m_stdout_fd, &rfds);
 
-    write(m_stdin_fd, request.c_str(), request.size());
-    write(m_stdin_fd, "\n", 1);
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 100 * 1000;
 
-	return true;
+    int ret = select(m_stdout_fd + 1, &rfds, NULL, NULL, &tv);
+    if (ret == -1)
+    {
+        return -1;
+    }
+	else if (ret == 0)
+    {
+        return 0;
+    }
+
+    ssize_t read_size = read(m_stdout_fd, &buffer[0], buffer.size());
+    if (read_size <= 0)
+    {
+        return -1;
+    }
+    return read_size;
 }
 
 }

@@ -29,13 +29,11 @@ public:
 	virtual ~McpStdioClientTransportImpl_Win32();
 
 protected:
-	virtual bool OnCreateProcess();
+	virtual bool OnCreateProcess(const std::wstring& filepath);
 	virtual void OnTerminateProcess();
-	virtual bool OnSendRequest(
-		const std::string& request,
-		std::function <bool(const std::string& response)> callback
-	);
-	virtual bool OnSendNotification(const std::string& notification);
+
+	virtual bool OnSend(const std::string& request);
+	virtual int OnRecv(std::vector<char>& buffer);
 
 private:
 	HANDLE m_hStdOutRead;

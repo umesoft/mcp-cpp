@@ -26,6 +26,12 @@
 namespace Mcp
 {
 
+#ifdef _WIN32
+const std::string NEW_LINE = "\r\n";
+#else
+const std::string NEW_LINE = "\n";
+#endif
+
 std::unique_ptr<McpStdioClientTransport> McpStdioClientTransport::CreateInstance(const std::wstring& filepath, int timeout)
 {
 #ifdef _WIN32
@@ -37,10 +43,9 @@ std::unique_ptr<McpStdioClientTransport> McpStdioClientTransport::CreateInstance
 
 McpStdioClientTransportImpl::McpStdioClientTransportImpl(const std::wstring& filepath, int timeout)
 	: m_filepath(filepath)
+	, m_is_runnning(false)
 	, m_timeout(timeout)
 {
-    const int REQUEST_BUFFER_SIZE = 128 * 1024;
-    m_request_buffer.resize(REQUEST_BUFFER_SIZE);
 }
 
 McpStdioClientTransportImpl::~McpStdioClientTransportImpl()
@@ -52,14 +57,56 @@ bool McpStdioClientTransportImpl::Initialize(
     std::function <bool(const std::string& response)> callback
 )
 {
-    if (!OnCreateProcess())
+    if (!OnCreateProcess(m_filepath))
     {
         return false;
     }
 
-    m_response_str.clear();
+	m_is_runnning = true;
 
-	if (!OnSendRequest(request, callback))
+	m_response_worker = std::thread([this]
+	{
+		const int REQUEST_BUFFER_SIZE = 128 * 1024;
+		std::vector<char> buffer(REQUEST_BUFFER_SIZE);
+
+		std::string response_str;
+
+		while (m_is_runnning)
+		{
+			int size = OnRecv(buffer);
+			if (size < 0)
+			{
+				break;
+			}
+
+			if (0 < size)
+			{
+				response_str.append(&buffer[0], size);
+
+				int pos = response_str.find(NEW_LINE);
+				if (0 <= pos)
+				{
+					std::lock_guard<std::mutex> lock(m_response_mutex);
+
+					m_response_queue.push(response_str.substr(0, pos));
+					m_response_cv.notify_one();
+
+					response_str = response_str.substr(pos + NEW_LINE.length());
+				}
+			}
+			else
+			{
+				Sleep(50);
+			}
+		}
+	});
+
+	if (!OnSend(request + NEW_LINE))
+	{
+		return false;
+	}
+
+	if (!WaitResponse(callback))
 	{
 		return false;
 	}
@@ -69,6 +116,12 @@ bool McpStdioClientTransportImpl::Initialize(
 
 void McpStdioClientTransportImpl::Shutdown()
 {
+	m_is_runnning = false;
+	m_response_cv.notify_one();
+	m_response_worker.join();
+
+	ClearResponse();
+
     OnTerminateProcess();
 }
 
@@ -77,28 +130,68 @@ bool McpStdioClientTransportImpl::SendRequest(
     std::function <bool(const std::string& response)> callback
 )
 {
-    return OnSendRequest(request, callback);
+	if (!OnSend(request + NEW_LINE))
+	{
+		return false;
+	}
+
+	if (!WaitResponse(callback))
+	{
+		return false;
+	}
 }
 
 bool McpStdioClientTransportImpl::SendNotification(const std::string& notification)
 {
-    return OnSendNotification(notification);
+	if (!OnSend(notification + NEW_LINE))
+	{
+		return false;
+	}
 }
 
-bool McpStdioClientTransportImpl::AppendResponse(char* response_buffer, int size, std::string& response_str)
+bool McpStdioClientTransportImpl::WaitResponse(std::function <bool(const std::string& response)> callback)
 {
-    m_response_str.append(response_buffer, size);
+	auto start = std::chrono::steady_clock::now();
 
-    int pos = m_response_str.find("\n");
-    if (pos <= 0)
-    {
-        return false;
-    }
+	while(m_is_runnning)
+	{
+		std::unique_lock<std::mutex> lock(m_response_mutex);
 
-    response_str = m_response_str.substr(0, pos);
-    m_response_str = m_response_str.substr(pos + 1);
+		if (m_response_queue.empty())
+		{
+			m_response_cv.wait_for(lock, std::chrono::milliseconds(50));
+		}
+
+		if (!m_response_queue.empty())
+		{
+			const std::string& response_str = m_response_queue.front();
+			if (callback(response_str))
+			{
+				m_response_queue.pop();
+				break;
+			}
+			m_response_queue.pop();
+		}
+
+		auto now = std::chrono::steady_clock::now();
+		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+		if (elapsed >= m_timeout)
+		{
+			return false;
+		}
+	}
 
 	return true;
+}
+
+void McpStdioClientTransportImpl::ClearResponse()
+{
+	std::lock_guard<std::mutex> lock(m_response_mutex);
+
+	while (!m_response_queue.empty())
+	{
+		m_response_queue.pop();
+	}
 }
 
 }

@@ -32,7 +32,7 @@ McpStdioClientTransportImpl_Win32::~McpStdioClientTransportImpl_Win32()
 {
 }
 
-bool McpStdioClientTransportImpl_Win32::OnCreateProcess()
+bool McpStdioClientTransportImpl_Win32::OnCreateProcess(const std::wstring& filepath)
 {
     SECURITY_ATTRIBUTES saAttr{};
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -61,9 +61,10 @@ bool McpStdioClientTransportImpl_Win32::OnCreateProcess()
     si.hStdInput = hStdInRead;
     si.dwFlags |= STARTF_USESTDHANDLES;
 
+    std::wstring ws = filepath;
     if (!CreateProcess(
         NULL,
-        m_filepath.data(),
+        ws.data(),
         NULL,
         NULL,
         TRUE,
@@ -97,7 +98,7 @@ void McpStdioClientTransportImpl_Win32::OnTerminateProcess()
 
     if (m_hProcess != NULL)
     {
-        if (WaitForSingleObject(m_hProcess, 500) != WAIT_OBJECT_0)
+        if (WaitForSingleObject(m_hProcess, 3 * 1000) != WAIT_OBJECT_0)
         {
             TerminateProcess(m_hProcess, 0);
         }
@@ -113,43 +114,52 @@ void McpStdioClientTransportImpl_Win32::OnTerminateProcess()
     }
 }
 
-bool McpStdioClientTransportImpl_Win32::OnSendRequest(
-    const std::string& request,
-    std::function <bool(const std::string& response)> callback
-)
+bool McpStdioClientTransportImpl_Win32::OnSend(const std::string& request)
 {
-    DWORD written;
-    WriteFile(m_hStdInWrite, request.c_str(), (DWORD)request.size(), &written, NULL);
-    WriteFile(m_hStdInWrite, "\n", 1, &written, NULL);
+    DWORD totalWritten = 0;
+    DWORD toWrite = (DWORD)request.size();
+    const char* data = request.c_str();
 
-    while (true)
+    while (totalWritten < toWrite)
     {
-        DWORD read = 0;
-        if (!ReadFile(m_hStdOutRead, &m_request_buffer[0], m_request_buffer.size(), &read, NULL))
+        DWORD written = 0;
+        if (!WriteFile(m_hStdInWrite, data + totalWritten, toWrite - totalWritten, &written, NULL))
         {
             return false;
         }
-
-		std::string response_str;
-        if (AppendResponse(&m_request_buffer[0], read, response_str))
+        if (written == 0)
         {
-            if (callback(response_str))
-            {
-                break;
-            }
+            return false;
         }
+        totalWritten += written;
     }
 
-	return true;
+    return true;
 }
 
-bool McpStdioClientTransportImpl_Win32::OnSendNotification(const std::string& notification)
+int McpStdioClientTransportImpl_Win32::OnRecv(std::vector<char>& buffer)
 {
-    DWORD written;
-    WriteFile(m_hStdInWrite, notification.c_str(), (DWORD)notification.size(), &written, NULL);
-    WriteFile(m_hStdInWrite, "\n", 1, &written, NULL);
+    DWORD avail = 0;
+    if (!PeekNamedPipe(m_hStdOutRead, NULL, 0, NULL, &avail, NULL))
+    {
+        return -1;
+    }
+    if (avail == 0)
+    {
+        return 0;
+    }
 
-    return true;
+    DWORD toRead = (DWORD)buffer.size();
+    if (avail < toRead)
+    {
+        toRead = avail;
+    }
+    DWORD read = 0;
+    if (!ReadFile(m_hStdOutRead, &buffer[0], toRead, &read, NULL))
+    {
+        return -1;
+    }
+    return (int)read;
 }
 
 }

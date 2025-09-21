@@ -38,20 +38,26 @@ public:
 	virtual bool SendNotification(const std::string& notification);
 
 protected:
+	virtual bool OnCreateProcess(const std::wstring& filepath) = 0;
+	virtual void OnTerminateProcess() = 0;
+
+	virtual bool OnSend(const std::string& request) = 0;
+	virtual int OnRecv(std::vector<char>& buffer) = 0;
+
+private:
 	std::wstring m_filepath;
-	std::string m_response_str;
-	std::vector<char> m_request_buffer;
+
+	std::thread m_response_worker;
+	bool m_is_runnning;
+
+	std::queue<std::string> m_response_queue;
+	std::mutex m_response_mutex;
+	std::condition_variable m_response_cv;
+
 	int m_timeout;
 
-	virtual bool OnCreateProcess() = 0;
-	virtual void OnTerminateProcess() = 0;
-	virtual bool OnSendRequest(
-		const std::string& request,
-		std::function <bool(const std::string& response)> callback
-	) = 0;
-	virtual bool OnSendNotification(const std::string& notification) = 0;
-
-	bool AppendResponse(char* response_buffer, int size, std::string& response_str);
+	bool WaitResponse(std::function <bool(const std::string& response)> callback);
+	void ClearResponse();
 };
 
 }
