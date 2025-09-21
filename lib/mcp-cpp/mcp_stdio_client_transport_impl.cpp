@@ -96,7 +96,7 @@ bool McpStdioClientTransportImpl::Initialize(
 			}
 			else
 			{
-				Sleep(50);
+				std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			}
 		}
 	});
@@ -139,6 +139,8 @@ bool McpStdioClientTransportImpl::SendRequest(
 	{
 		return false;
 	}
+
+	return true;
 }
 
 bool McpStdioClientTransportImpl::SendNotification(const std::string& notification)
@@ -147,6 +149,8 @@ bool McpStdioClientTransportImpl::SendNotification(const std::string& notificati
 	{
 		return false;
 	}
+
+	return true;
 }
 
 bool McpStdioClientTransportImpl::WaitResponse(std::function <bool(const std::string& response)> callback)

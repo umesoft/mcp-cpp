@@ -24,8 +24,10 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <queue>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace Mcp {

@@ -36,7 +36,7 @@ McpStdioClientTransportImpl_Posix::~McpStdioClientTransportImpl_Posix()
 {
 }
 
-bool McpStdioClientTransportImpl_Win32::OnCreateProcess(const std::wstring& filepath)
+bool McpStdioClientTransportImpl_Posix::OnCreateProcess(const std::wstring& filepath)
 {
     int stdin_pipe[2];
     int stdout_pipe[2];
@@ -140,7 +140,7 @@ bool McpStdioClientTransportImpl_Posix::OnSend(const std::string& request)
     return true;
 }
 
-ssize_t McpStdioClientTransportImpl_Posix::OnRecv(std::vector<char>& buffer)
+int McpStdioClientTransportImpl_Posix::OnRecv(std::vector<char>& buffer)
 {
     fd_set rfds;
     FD_ZERO(&rfds);

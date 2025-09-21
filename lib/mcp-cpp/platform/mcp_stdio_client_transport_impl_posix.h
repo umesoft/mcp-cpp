@@ -21,7 +21,7 @@
 
 namespace Mcp {
 
-class McpStdioClientTransportImpl_Posix : public McpStdioClientTransport {
+class McpStdioClientTransportImpl_Posix : public McpStdioClientTransportImpl {
 public:
 	McpStdioClientTransportImpl_Posix(const std::wstring& filepath, int timeout);
 	virtual ~McpStdioClientTransportImpl_Posix();
