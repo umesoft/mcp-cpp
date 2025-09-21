@@ -25,19 +25,22 @@ class McpClientTransport {
 public:
 	virtual ~McpClientTransport();
 
+protected:
+	McpClientTransport();
+
+private:
 	virtual bool Initialize(
 		const std::string& request,
 		std::function <bool(const std::string& response)> callback
 	) = 0;
 	virtual void Shutdown() = 0;
 	virtual bool SendRequest(
-		const std::string& request, 
+		const std::string& request,
 		std::function <bool(const std::string& response)> callback
 	) = 0;
 	virtual bool SendNotification(const std::string& notification) = 0;
 
-protected:
-	McpClientTransport();
+	friend class McpClientImpl;
 };
 
 }

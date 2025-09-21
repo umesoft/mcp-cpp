@@ -33,21 +33,23 @@ public:
 
 	virtual ~McpServerTransport();
 
-	void Open(Handler* handler);
-	void Close();
-	bool ProcRequest();
-	void SendResponse(const std::string& session_id, const std::string& response_str, bool is_finish = true);
-
 protected:
 	Handler* m_handler;
 
 	McpServerTransport();
 
 private:
+	void Open(Handler* handler);
+	void Close();
+	bool ProcRequest();
+	void SendResponse(const std::string& session_id, const std::string& response_str, bool is_finish = true);
+
 	virtual void OnOpen() {};
 	virtual void OnClose() {};
 	virtual bool OnProcRequest() { return true; };
 	virtual void OnSendResponse(const std::string& session_id, const std::string& response_str, bool is_finish) {};
+
+	friend class McpServerImpl;
 };
 
 }
