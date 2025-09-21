@@ -196,7 +196,7 @@ void McpHttpServerTransportImpl::cbEvHander(void* connection, int event_code, vo
 				{
 					bool authorization_chk = false;
 
-					if (!auth_token.empty())
+					if (!auth_token.empty() && 7 <= auth_token.length())
 					{
 						std::string::size_type aPos = auth_token.find_first_of("Bearer ");
 						if (aPos != std::string::npos)
