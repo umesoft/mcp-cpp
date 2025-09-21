@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\examples\mcp-client\main.cpp" />
+    <ClCompile Include="..\..\examples\mcp-agent\main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mcp-cpp\mcp-cpp.vcxproj">
@@ -25,7 +25,7 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{844968f6-5834-4bbf-8549-a3b59acc0ca8}</ProjectGuid>
-    <RootNamespace>mcpclient</RootNamespace>
+    <RootNamespace>mcpagent</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
