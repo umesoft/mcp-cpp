@@ -17,7 +17,7 @@
 
 #include "mcp-cpp/mcp_server.h"
 
-// #define USE_HTTP_TRANSPORT
+#define USE_HTTP_TRANSPORT
 
 #ifdef USE_HTTP_TRANSPORT
 #include "mcp-cpp/mcp_http_server_transport.h"
@@ -143,6 +143,11 @@ int main()
 		}
 	}
 #endif
+
+	if (count_down_worker && count_down_worker->joinable())
+	{
+		count_down_worker->join();
+	}
 
 	server->Stop();
 

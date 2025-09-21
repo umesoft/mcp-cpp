@@ -17,7 +17,7 @@
 
 #include "mcp-cpp/mcp_client.h"
 
-// #define USE_HTTP_TRANSPORT
+#define USE_HTTP_TRANSPORT
 
 #ifdef USE_HTTP_TRANSPORT
 #include "mcp-cpp/mcp_http_client_transport.h"
@@ -47,13 +47,12 @@ int main()
 	std::vector<McpTool> tools;
 	client->ToolsList(tools);
 
-	std::map<std::string, std::string> args = {
-		{ "value", "5"  }
-	};
 	nlohmann::json content;
 	client->ToolsCall(
 		"count_down", 
-		args, 
+		{
+			{ "value", "5"  }
+		},
 		content,
 		[](const std::string& method, const nlohmann::json& params)
 		{
