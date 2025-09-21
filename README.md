@@ -25,12 +25,11 @@ The following features have been implemented:
 - **Tools**
   - List
   - Call
+  - Notification  
 
 Now developping:
 
 - **Authorization**
-- **Tools**
-  - Notification  
  
 ## Build
 
