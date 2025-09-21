@@ -130,6 +130,8 @@ bool McpStdioClientTransportImpl::SendRequest(
     std::function <bool(const std::string& response)> callback
 )
 {
+	ClearResponse();
+
 	if (!OnSend(request + NEW_LINE))
 	{
 		return false;
