@@ -37,7 +37,7 @@ Now developping:
 
 Use cmake or vc.
 
-## Used libraries
+## Dependencies libraries
 
 - JWT++ (https://github.com/Thalhammer/jwt-cpp)
 - JSON for Modern C++ (https://github.com/nlohmann/json)
