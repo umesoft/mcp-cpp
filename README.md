@@ -18,9 +18,21 @@ The following features have been implemented:
 
 ### Client
 
-Not yet implemented.  
-Planned for future development.
+The following features have been implemented:
 
+- **Lifecycle** (Initialize ～ Shutdown)
+- **Transport** (stdio)  
+- **Tools**
+  - Call
+
+Now developping:
+
+- **Transport** (Streamable HTTP) 
+- **Authorization**
+- **Tools**
+  - List
+  - Notification  
+ 
 ## Build
 
 Use cmake or vc.
