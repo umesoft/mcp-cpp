@@ -35,7 +35,7 @@ public:
 		std::string name, 
 		const std::map<std::string, std::string>& args,
 		nlohmann::json& content,
-		std::function <void(nlohmann::json& notification)> callback = nullptr) = 0;
+		std::function <void(const std::string& method, const nlohmann::json& params)> notification = nullptr) = 0;
 
 protected:
 	McpClient() {};

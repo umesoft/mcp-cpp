@@ -55,9 +55,9 @@ int main()
 		"count_down", 
 		args, 
 		content,
-		[](const nlohmann::json& notification)
+		[](const std::string& method, const nlohmann::json& params)
 		{
-			std::cout << "Notification: " << notification.dump(2) << std::endl;
+			std::cout << "Notification: " << method << std::endl << params.dump(2) << std::endl;
 			return true;
 		}
 	);

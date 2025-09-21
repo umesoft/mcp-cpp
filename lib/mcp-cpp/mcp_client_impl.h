@@ -34,7 +34,7 @@ public:
 		std::string name,
 		const std::map<std::string, std::string>& args,
 		nlohmann::json& content,
-		std::function <void(nlohmann::json& notification)> callback = nullptr);
+		std::function <void(const std::string& method, const nlohmann::json& params)> notification = nullptr);
 
 private:
 	std::string m_name;

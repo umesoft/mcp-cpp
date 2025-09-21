@@ -203,7 +203,7 @@ bool McpClientImpl::ToolsCall(
     std::string name,
     const std::map<std::string, std::string>& args,
     nlohmann::json& content,
-    std::function <void(nlohmann::json& notification)> callback)
+    std::function <void(const std::string& method, const nlohmann::json& notification)> notification)
 {
     m_request_id++;
 
@@ -229,24 +229,27 @@ bool McpClientImpl::ToolsCall(
     nlohmann::json response_json;
 	if (!m_transport->SendRequest(
         tool_call.dump(), 
-        [this, &response_json, &callback](const std::string& response)->bool
+        [this, &response_json, &notification](const std::string& response)->bool
         {
             if (this->IsCorrectResponse(response, response_json))
             {
                 return true;
             }
 
-            if (callback != nullptr)
+            if (notification != nullptr)
             {
 				auto it = response_json.find("method");
                 if (it != response_json.end())
                 {
-                    if (it->get<std::string>().find("notifications/") == 0)
+					std::string method = it->get<std::string>();
+                    if (method.find("notifications/") == 0)
                     {
+						method = method.substr(sizeof("notifications/") - 1);
+
 						auto params_it = response_json.find("params");
 						if (params_it != response_json.end())
 						{
-							callback(*params_it);
+                            notification(method, *params_it);
 							return false;
 						}
                     }
