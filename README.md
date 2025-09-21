@@ -23,6 +23,7 @@ The following features have been implemented:
 - **Lifecycle** (Initialize ～ Shutdown)
 - **Transport** (stdio)  
 - **Tools**
+  - List
   - Call
 
 Now developping:
@@ -30,7 +31,6 @@ Now developping:
 - **Transport** (Streamable HTTP) 
 - **Authorization**
 - **Tools**
-  - List
   - Notification  
  
 ## Build
