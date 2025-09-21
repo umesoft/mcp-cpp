@@ -98,7 +98,7 @@ void McpStdioClientTransportImpl_Win32::OnTerminateProcess()
 
     if (m_hProcess != NULL)
     {
-        if (WaitForSingleObject(m_hProcess, 3 * 1000) != WAIT_OBJECT_0)
+        if (WaitForSingleObject(m_hProcess, 1000) != WAIT_OBJECT_0)
         {
             TerminateProcess(m_hProcess, 0);
         }

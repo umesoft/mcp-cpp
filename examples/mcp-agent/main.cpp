@@ -27,6 +27,8 @@
 
 #include "openai-cpp/openai.hpp"
 
+#include <iostream>
+
 using namespace Mcp;
 
 int main()

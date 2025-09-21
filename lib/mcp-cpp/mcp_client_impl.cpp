@@ -199,7 +199,11 @@ void McpClientImpl::ParseSchema(const nlohmann::json& schema_json, std::string s
     }
 }
 
-bool McpClientImpl::ToolsCall(std::string name, const std::map<std::string, std::string>& args, nlohmann::json& content)
+bool McpClientImpl::ToolsCall(
+    std::string name,
+    const std::map<std::string, std::string>& args,
+    nlohmann::json& content,
+    std::function <void(nlohmann::json& notification)> callback)
 {
     m_request_id++;
 
@@ -225,9 +229,31 @@ bool McpClientImpl::ToolsCall(std::string name, const std::map<std::string, std:
     nlohmann::json response_json;
 	if (!m_transport->SendRequest(
         tool_call.dump(), 
-        [this, &response_json](const std::string& response)->bool
+        [this, &response_json, &callback](const std::string& response)->bool
         {
-            return this->IsCorrectResponse(response, response_json);
+            if (this->IsCorrectResponse(response, response_json))
+            {
+                return true;
+            }
+
+            if (callback != nullptr)
+            {
+				auto it = response_json.find("method");
+                if (it != response_json.end())
+                {
+                    if (it->get<std::string>().find("notifications/") == 0)
+                    {
+						auto params_it = response_json.find("params");
+						if (params_it != response_json.end())
+						{
+							callback(*params_it);
+							return false;
+						}
+                    }
+                }
+            }
+
+            return false;
         }
     ))
 	{

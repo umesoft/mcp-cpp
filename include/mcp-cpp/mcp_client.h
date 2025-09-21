@@ -31,7 +31,11 @@ public:
 	virtual void Shutdown() = 0;
 
 	virtual bool ToolsList(std::vector<McpTool>& tools) = 0;
-    virtual bool ToolsCall(std::string name, const std::map<std::string, std::string>& args, nlohmann::json& content) = 0;
+    virtual bool ToolsCall(
+		std::string name, 
+		const std::map<std::string, std::string>& args,
+		nlohmann::json& content,
+		std::function <void(nlohmann::json& notification)> callback = nullptr) = 0;
 
 protected:
 	McpClient() {};

@@ -12,6 +12,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mcp-server", "mcp-server\mc
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mcp-agent", "mcp-agent\mcp-agent.vcxproj", "{844968F6-5834-4BBF-8549-A3B59ACC0CA8}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mcp-client", "mcp-client\mcp-client.vcxproj", "{C7E6FEA2-0491-40A8-9A4B-F0C7AB24B609}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -30,6 +32,10 @@ Global
 		{844968F6-5834-4BBF-8549-A3B59ACC0CA8}.Debug|x64.Build.0 = Debug|x64
 		{844968F6-5834-4BBF-8549-A3B59ACC0CA8}.Release|x64.ActiveCfg = Release|x64
 		{844968F6-5834-4BBF-8549-A3B59ACC0CA8}.Release|x64.Build.0 = Release|x64
+		{C7E6FEA2-0491-40A8-9A4B-F0C7AB24B609}.Debug|x64.ActiveCfg = Debug|x64
+		{C7E6FEA2-0491-40A8-9A4B-F0C7AB24B609}.Debug|x64.Build.0 = Debug|x64
+		{C7E6FEA2-0491-40A8-9A4B-F0C7AB24B609}.Release|x64.ActiveCfg = Release|x64
+		{C7E6FEA2-0491-40A8-9A4B-F0C7AB24B609}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
