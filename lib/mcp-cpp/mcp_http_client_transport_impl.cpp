@@ -135,7 +135,6 @@ bool McpHttpClientTransportImpl::Initialize(
                     return false;
                 }
 
-                m_authorization = std::make_unique<McpClientAuthorizationImpl>();
                 if (!m_authorization->GetServerMeta(resource_meta_url.value()))
                 {
                     return false;
