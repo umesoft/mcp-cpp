@@ -25,6 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\mcp-cpp\mcp_client.h" />
+    <ClInclude Include="..\..\include\mcp-cpp\mcp_client_authorization.h" />
     <ClInclude Include="..\..\include\mcp-cpp\mcp_client_transport.h" />
     <ClInclude Include="..\..\include\mcp-cpp\mcp_http_client_transport.h" />
     <ClInclude Include="..\..\include\mcp-cpp\mcp_server.h" />

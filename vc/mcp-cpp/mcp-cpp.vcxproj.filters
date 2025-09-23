@@ -104,6 +104,9 @@
     <ClInclude Include="..\..\lib\mcp-cpp\mcp_common.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\mcp-cpp\mcp_client_authorization.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
