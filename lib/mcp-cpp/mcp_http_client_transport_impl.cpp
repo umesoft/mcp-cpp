@@ -231,9 +231,10 @@ bool McpHttpClientTransportImpl::Send(const std::string& request, std::string& r
     struct curl_slist* headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
 
-    if (m_authorization)
+    const std::string& token = m_authorization->GetToken();
+    if (!token.empty())
     {
-        std::string authorization = "Authorization: Bearer " + m_authorization->GetToken();
+        std::string authorization = "Authorization: Bearer " + token;
         headers = curl_slist_append(headers, authorization.c_str());
     }
     if (!m_mcp_session_id.empty())
