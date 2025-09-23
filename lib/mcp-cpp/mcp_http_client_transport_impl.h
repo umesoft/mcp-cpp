@@ -18,8 +18,9 @@
 #pragma once
 
 #include "mcp-cpp/mcp_http_client_transport.h"
+#include "mcp_client_authorization_impl.h"
 
-#include "curl/curl.h"
+#include <curl/curl.h>
 
 namespace Mcp {
 
@@ -28,12 +29,14 @@ public:
 	McpHttpClientTransportImpl(
 		const std::string& host, 
 		const std::string& entry_point,
-		const std::string& token,
-		std::function <void(const std::string& url, std::string& token)> auth_callback = nullptr
+		std::function <bool(const std::string& url)> auth_callback = nullptr
 	);
 	virtual ~McpHttpClientTransportImpl();
 
+	virtual McpClientAuthorization* GetAuthorization() { return m_authorization.get(); }
+
 	virtual bool Initialize(
+		const std::string& client_name,
 		const std::string& request,
 		std::function <bool(const std::string& response)> callback
 	);
@@ -49,7 +52,9 @@ private:
 	std::string m_entry_point;
 	std::string m_url;
 
-	std::function <void(const std::string& url, std::string& token)> m_auth_callback;
+	std::function <bool(const std::string& url)> m_auth_callback;
+
+	std::unique_ptr<McpClientAuthorizationImpl> m_authorization;
 
 	CURL* m_curl;
 
@@ -57,10 +62,6 @@ private:
 	std::string m_header_buffer;
 	std::string m_response;
 	std::string m_response_buffer;
-
-	std::string m_authorization;
-
-	void UpdateAuthorization(const std::string& token);
 
 	std::string m_mcp_session_id;
 
@@ -70,8 +71,6 @@ private:
 	bool Send(const std::string& request, std::string& response, int& status_code);
 
 	std::optional<std::string> ExtractResourceMetadata(const std::string& header);
-
-	void Authenticate(const std::string& url, std::string& token);
 };
 
 }

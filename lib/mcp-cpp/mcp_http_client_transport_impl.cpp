@@ -23,18 +23,16 @@ namespace Mcp {
 std::unique_ptr<McpHttpClientTransport> McpHttpClientTransport::CreateInstance(
     const std::string& host, 
     const std::string& entry_point,
-    const std::string& token,
-    std::function <void(const std::string& url, std::string& token)> auth_callback
+    std::function <bool(const std::string& url)> auth_callback
 )
 {
-	return std::make_unique<McpHttpClientTransportImpl>(host, entry_point, token, auth_callback);
+	return std::make_unique<McpHttpClientTransportImpl>(host, entry_point, auth_callback);
 }
 
 McpHttpClientTransportImpl::McpHttpClientTransportImpl(
     const std::string& host, 
     const std::string& entry_point,
-    const std::string& token,
-    std::function <void(const std::string& auth_url, std::string& token)> auth_callback
+    std::function <bool(const std::string& auth_url)> auth_callback
 )
 	: m_host(host)
 	, m_entry_point(entry_point)
@@ -43,16 +41,11 @@ McpHttpClientTransportImpl::McpHttpClientTransportImpl(
 {
 	m_url = m_host + m_entry_point;
 
-    UpdateAuthorization(token);
+    m_authorization = std::make_unique<McpClientAuthorizationImpl>();
 }
 
 McpHttpClientTransportImpl::~McpHttpClientTransportImpl()
 {
-}
-
-void McpHttpClientTransportImpl::UpdateAuthorization(const std::string& token)
-{
-    m_authorization = token.empty() ? "" : "Authorization: Bearer " + token;
 }
 
 size_t McpHttpClientTransportImpl::HeaderCallback(char* ptr, size_t size, size_t nmemb, void* userdata)
@@ -109,6 +102,7 @@ size_t McpHttpClientTransportImpl::WriteCallback(char* ptr, size_t size, size_t 
 }
 
 bool McpHttpClientTransportImpl::Initialize(
+    const std::string& client_name,
     const std::string& request,
     std::function <bool(const std::string& response)> callback
 )
@@ -129,35 +123,41 @@ bool McpHttpClientTransportImpl::Initialize(
     {
         if (status_code == 401)
         {
-            m_authorization = "";
+            m_authorization->Reset();
 
             auto it = m_headers.find("www-authenticate");
             if (it != m_headers.end())
             {
                 std::string www_authenticate = it->second;
-                auto url = ExtractResourceMetadata(www_authenticate);
-                if (!url.has_value())
+                auto resource_meta_url = ExtractResourceMetadata(www_authenticate);
+                if (!resource_meta_url.has_value())
                 {
                     return false;
                 }
 
-                std::string token = "";
-
-                if (m_auth_callback != nullptr)
-                {
-                    m_auth_callback(*url, token);
-                }
-                else
-                {
-                    Authenticate(*url, token);
-                }
-
-                if (token.empty())
+                m_authorization = std::make_unique<McpClientAuthorizationImpl>();
+                if (!m_authorization->GetServerMeta(resource_meta_url.value()))
                 {
                     return false;
                 }
 
-                UpdateAuthorization(token);
+                if (m_authorization->GetClientId().empty())
+                {
+                    if (!m_authorization->DynamicRegistration(client_name))
+                    {
+                        return false;
+                    }
+                }
+
+                if (!m_authorization->Authorize(m_auth_callback))
+                {
+                    return false;
+                }
+
+                if (!m_authorization->WaitToken())
+                {
+                    return false;
+                }
 
                 status_code = 0;
                 if (!Send(request, response, status_code))
@@ -231,9 +231,10 @@ bool McpHttpClientTransportImpl::Send(const std::string& request, std::string& r
     struct curl_slist* headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
 
-    if (!m_authorization.empty())
+    if (m_authorization)
     {
-        headers = curl_slist_append(headers, m_authorization.c_str());
+        std::string authorization = "Authorization: Bearer " + m_authorization->GetToken();
+        headers = curl_slist_append(headers, authorization.c_str());
     }
     if (!m_mcp_session_id.empty())
     {
@@ -305,24 +306,6 @@ std::optional<std::string> McpHttpClientTransportImpl::ExtractResourceMetadata(c
     }
 
     return header.substr(start, end - start);
-}
-
-void McpHttpClientTransportImpl::Authenticate(const std::string& url, std::string& token)
-{
-    // retrive oauth-protected-resource
-    // ...
-
-    // register dynamic client
-    // ...
-
-    // create callback http server
-    // ...
-
-	// open authorization url in browser
-    // ...
-
-	// wait for token
-    // ...
 }
 
 }

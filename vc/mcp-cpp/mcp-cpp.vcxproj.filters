@@ -48,6 +48,12 @@
     <ClCompile Include="..\..\lib\mcp-cpp\platform\mcp_stdio_client_transport_impl_win32.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\lib\mcp-cpp\mcp_client_authorization_impl.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib\mcp-cpp\mcp_client_authorization.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\lib\mcp-cpp\platform\platform.h">
@@ -105,6 +111,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\mcp-cpp\mcp_client_authorization.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\lib\mcp-cpp\mcp_client_authorization_impl.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

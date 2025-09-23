@@ -33,6 +33,10 @@ int main()
 {
 #ifdef USE_HTTP_TRANSPORT
 	std::shared_ptr<McpHttpClientTransport> transport = std::move(McpHttpClientTransport::CreateInstance("http://localhost:8000", "/mcp"));
+
+	auto authorization = transport->GetAuthorization();
+	authorization->SetRedirectPortNo(3210);
+
 #else
 #ifdef _WIN32
 	std::shared_ptr<McpStdioClientTransport> transport = std::move(McpStdioClientTransport::CreateInstance(L"mcp-server.exe"));
@@ -64,6 +68,6 @@ int main()
 	std::cout << "content: " << content.dump(2) << std::endl;
 
     client->Shutdown();
-	
+
     return 0;
 }

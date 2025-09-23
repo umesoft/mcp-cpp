@@ -64,6 +64,7 @@ bool McpClientImpl::Initialize(std::shared_ptr<McpClientTransport> transport)
 
     nlohmann::json response_json;
     if (!m_transport->Initialize(
+        m_name,
         initialize.dump(), 
         [this, &response_json](const std::string& response)->bool
         {

@@ -17,30 +17,33 @@
 
 #pragma once
 
-namespace mcp {
+#include "mcp_type.h"
+
+namespace Mcp {
 
 class McpClientAuthorization
 {
 public:
-	std::unique_ptr<McpClientAuthorization> CreateInstance();
+	virtual ~McpClientAuthorization();
 
-	virtual ~McpClientAuthorization() {}
-	
-	virtual bool GetServerMeta(const std::string& resource_meta_url) = 0;
-	
-	virtual bool CreateLocalRegidrect(int port_no) = 0;
-	virtual void CloseLocalRegidrect() = 0;
-	virtual void SetRedirect(const std::string& redirect_url) = 0;
+	void SetRedirectPortNo(int port_no);
+	void SetRedirectUrl(const std::string& url);
 
-	virtual bool DynamicRegistration(const std::string& client_name, std::string& client_id, std::string& client_secret) = 0;
-	virtual void SetRegistration(const std::string& client_id, const std::string& client_secret) = 0;
+	void SetClientInfo(const std::string& client_id, const std::string& client_secret);
+	const std::string& GetClientId() const;
+	const std::string& GetClientSecret() const;
 
-	virtual std::string Authorize(const std::string& scope, std::function <bool(const std::string& url)> open_browser = nullptr) = 0;
-
-	virtual std::string RequestToken(const std::string& code) = 0;
+	virtual void SetAuthorizationCode(const std::string& code) = 0;
 
 protected:
-	McpClientAuthorization() {}
+	McpClientAuthorization();
+
+private:
+	int m_redirect_port_no;
+	std::string m_redirect_url;
+
+	std::string m_client_id;
+	std::string m_client_secret;
 };
 
 }

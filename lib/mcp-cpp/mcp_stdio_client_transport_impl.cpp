@@ -53,7 +53,8 @@ McpStdioClientTransportImpl::~McpStdioClientTransportImpl()
 }
 
 bool McpStdioClientTransportImpl::Initialize(
-    const std::string& request, 
+	const std::string& client_name,
+	const std::string& request,
     std::function <bool(const std::string& response)> callback
 )
 {

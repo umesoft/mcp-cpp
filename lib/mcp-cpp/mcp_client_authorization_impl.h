@@ -17,25 +17,38 @@
 
 #pragma once
 
-#include "mcp_client_transport.h"
-#include "mcp_client_authorization.h"
+#include "mcp-cpp/mcp_client_authorization.h"
+
+#include <curl/curl.h>
 
 namespace Mcp {
 
-class McpHttpClientTransport : public McpClientTransport {
+class McpClientAuthorizationImpl : public McpClientAuthorization
+{
 public:
-	static std::unique_ptr<McpHttpClientTransport> CreateInstance(
-		const std::string& host, 
-		const std::string& entry_point,
-		std::function <bool(const std::string& url)> auth_callback = nullptr
-	);
-	
-	virtual ~McpHttpClientTransport() {}
+	McpClientAuthorizationImpl();
+	virtual ~McpClientAuthorizationImpl();
 
-	virtual McpClientAuthorization* GetAuthorization() = 0;
+	void Reset();
 
-protected:
-	McpHttpClientTransport() {}
+	bool GetServerMeta(const std::string& resource_meta_url);
+	const std::string& GetAuthUrl() const;
+
+	bool DynamicRegistration(const std::string& client_name);
+
+	bool Authorize(std::function <bool(const std::string& url)> open_browser = nullptr);
+
+	virtual void SetAuthorizationCode(const std::string& code);
+
+	bool WaitToken();
+
+	const std::string& GetToken() const { return m_token; }
+
+private:
+	int m_redirect_port_no;
+	std::string m_redirect_url;
+
+	std::string m_token;
 };
 
 }

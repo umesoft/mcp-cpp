@@ -27,6 +27,7 @@ public:
 	virtual ~McpStdioClientTransportImpl();
 
 	virtual bool Initialize(
+		const std::string& client_name,
 		const std::string& request,
 		std::function <bool(const std::string& response)> callback
 	);
