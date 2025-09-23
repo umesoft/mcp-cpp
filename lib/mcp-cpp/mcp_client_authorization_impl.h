@@ -31,16 +31,13 @@ public:
 
 	void Reset();
 
-	bool GetServerMeta(const std::string& resource_meta_url);
-	const std::string& GetAuthUrl() const;
-
-	bool DynamicRegistration(const std::string& client_name);
-
-	bool Authorize(std::function <bool(const std::string& url)> open_browser = nullptr);
+	bool Authorize(
+		const std::string& resource_meta_url,
+		const std::string& client_name,
+		std::function <bool(const std::string& url)> open_browser = nullptr
+	);
 
 	virtual void SetAuthorizationCode(const std::string& code);
-
-	bool WaitToken();
 
 	const std::string& GetToken() const { return m_token; }
 
@@ -49,6 +46,10 @@ private:
 	std::string m_redirect_url;
 
 	std::string m_token;
+
+	bool GetServerMeta(const std::string& resource_meta_url);
+	bool DynamicRegistration(const std::string& client_name);
+	bool WaitToken();
 };
 
 }

@@ -38,18 +38,63 @@ bool McpClientAuthorizationImpl::GetServerMeta(const std::string& resource_meta_
 	return true;
 }
 
-const std::string& McpClientAuthorizationImpl::GetAuthUrl() const
-{
-	return "";
-}
-
 bool McpClientAuthorizationImpl::DynamicRegistration(const std::string& client_name)
 {
 	return true;
 }
 
-bool McpClientAuthorizationImpl::Authorize(std::function <bool(const std::string& url)> open_browser)
+bool McpClientAuthorizationImpl::Authorize(
+	const std::string& resource_meta_url,
+	const std::string& client_name,
+	std::function <bool(const std::string& url)> open_browser
+)
 {
+	if (!GetServerMeta(resource_meta_url))
+	{
+		return false;
+	}
+
+	if (m_client_id.empty())
+	{
+		if (!DynamicRegistration(client_name))
+		{
+			return false;
+		}
+	}
+
+	if (m_redirect_url.empty())
+	{
+		// ...
+	}
+
+	std::string url;
+
+	if (open_browser)
+	{
+		if (!open_browser(url))
+		{
+			return false;
+		}
+	}
+	else
+{
+#ifdef _WIN32
+		std::string cmd = "start \"\" \"" + url + "\"";
+#else
+		std::string cmd = "xdg-open " + url;
+#endif
+
+		std::system(cmd.c_str());
+}
+
+	if (!WaitToken())
+{
+		// ...
+		return false;
+	}
+
+	// ...
+
 	return true;
 }
 

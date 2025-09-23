@@ -36,14 +36,13 @@ public:
 	virtual void SetAuthorizationCode(const std::string& code) = 0;
 
 protected:
-	McpClientAuthorization();
-
-private:
 	int m_redirect_port_no;
 	std::string m_redirect_url;
 
 	std::string m_client_id;
 	std::string m_client_secret;
+
+	McpClientAuthorization();
 };
 
 }

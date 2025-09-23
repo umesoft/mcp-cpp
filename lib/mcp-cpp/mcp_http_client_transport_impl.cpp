@@ -135,25 +135,7 @@ bool McpHttpClientTransportImpl::Initialize(
                     return false;
                 }
 
-                if (!m_authorization->GetServerMeta(resource_meta_url.value()))
-                {
-                    return false;
-                }
-
-                if (m_authorization->GetClientId().empty())
-                {
-                    if (!m_authorization->DynamicRegistration(client_name))
-                    {
-                        return false;
-                    }
-                }
-
-                if (!m_authorization->Authorize(m_auth_callback))
-                {
-                    return false;
-                }
-
-                if (!m_authorization->WaitToken())
+                if (!m_authorization->Authorize(resource_meta_url.value(), client_name, m_auth_callback))
                 {
                     return false;
                 }
