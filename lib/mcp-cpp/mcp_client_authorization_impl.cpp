@@ -25,6 +25,8 @@
 namespace Mcp {
 
 McpClientAuthorizationImpl::McpClientAuthorizationImpl()
+	: m_mgr(nullptr)
+	, m_is_running(false)
 {
 }
 
@@ -39,11 +41,15 @@ void McpClientAuthorizationImpl::Reset()
 
 bool McpClientAuthorizationImpl::OpenCallbackServer()
 {
+	if (m_mgr != nullptr)
+	{
+		return false;
+	}
+
 	std::string host = "localhost:";
 	host += std::to_string(m_redirect_port_no);
 
 	mg_mgr* mgr = new mg_mgr;
-	m_mgr = mgr;
 	mg_mgr_init(mgr);
 
 	if (mg_http_listen(
@@ -52,9 +58,12 @@ bool McpClientAuthorizationImpl::OpenCallbackServer()
 		(mg_event_handler_t)cbEvHander,
 		this) == nullptr)
 	{
+		mg_mgr_free(mgr);
+		delete mgr;
 		return false;
 	}
 
+	m_mgr = mgr;
 	m_is_running = true;
 
 	m_callback_worker = std::make_unique<std::thread>([this]
@@ -102,9 +111,13 @@ void McpClientAuthorizationImpl::CloseCallbackServer()
 		m_callback_worker.reset();
 	}
 
-	mg_mgr* mgr = (mg_mgr*)m_mgr;
-	mg_mgr_free(mgr);
-	m_mgr = nullptr;
+	if (m_mgr != nullptr)
+	{
+		mg_mgr* mgr = (mg_mgr*)m_mgr;
+		mg_mgr_free(mgr);
+		delete mgr;
+		m_mgr = nullptr;
+	}
 }
 
 bool McpClientAuthorizationImpl::Authorize(
