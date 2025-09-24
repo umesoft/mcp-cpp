@@ -29,8 +29,10 @@ The following features have been implemented:
   - Notification  
 
 Now developping:
-PKCE support
- 
+
+- PKCE support
+- Streamable HTTP Notification in Client.
+
 ## Build
 
 Use cmake or vc.
