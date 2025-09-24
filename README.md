@@ -22,14 +22,14 @@ The following features have been implemented:
 
 - **Lifecycle** (Initialize ～ Shutdown)
 - **Transport** (stdio & Streamable HTTP)  
+- **Authorization**
 - **Tools**
   - List
   - Call
   - Notification  
 
 Now developping:
-
-- **Authorization**
+PKCE support
  
 ## Build
 
