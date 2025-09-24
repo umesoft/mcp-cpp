@@ -254,18 +254,22 @@ bool McpHttpClientTransportImpl::Send(const std::string& request, std::string& r
 
     status_code = (int)http_code;
 
-    if (status_code != 200)
+    if (status_code == 200)
     {
-        return false;
+        const std::string prefix = "event: message\ndata: ";
+        if (m_response.rfind(prefix, 0) != 0)
+        {
+            return false;
+        }
+        response = m_response.substr(prefix.size());
+        return true;
+    }
+    else if (status_code == 202)
+    {
+        return true;
     }
 
-    const std::string prefix = "event: message\ndata: ";
-    if (m_response.rfind(prefix, 0) != 0) {
-        return false;
-    }
-    response = m_response.substr(prefix.size());
-
-    return true;
+    return false;
 }
 
 std::optional<std::string> McpHttpClientTransportImpl::ExtractResourceMetadata(const std::string& header)

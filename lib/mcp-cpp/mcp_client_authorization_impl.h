@@ -42,14 +42,36 @@ public:
 	const std::string& GetToken() const { return m_token; }
 
 private:
-	int m_redirect_port_no;
-	std::string m_redirect_url;
+	nlohmann::json m_protected_resource;
+	std::string m_authorization_server;
+	nlohmann::json m_resource_meta_data;
+	std::string m_scope;
+	std::string m_code;
 
 	std::string m_token;
 
-	bool GetServerMeta(const std::string& resource_meta_url);
+	void* m_mgr;
+	bool m_is_running;
+	std::unique_ptr<std::thread> m_callback_worker;
+
+	std::mutex m_code_mutex;
+	std::condition_variable m_code_cv;
+
+	static void cbEvHander(void* connection, int event_code, void* event_data);
+
+	bool OpenCallbackServer();
+	void CloseCallbackServer();
+
+	bool GetOAuthProtectedResource(const std::string& resource_url);
+	bool GetResourceMetaData();
 	bool DynamicRegistration(const std::string& client_name);
 	bool WaitToken();
+	bool RequestToken();
+
+	std::string GetRedirectUrl();
+	std::string GetAuthUrl();
+
+	static size_t WriteCallback(char* ptr, size_t size, size_t nmemb, void* responseData);
 };
 
 }

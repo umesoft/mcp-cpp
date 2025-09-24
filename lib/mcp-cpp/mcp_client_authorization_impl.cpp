@@ -15,12 +15,16 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#define NOMINMAX
+#include "platform/platform.h"
+
+#include "mongoose.c"
+
 #include "mcp_client_authorization_impl.h"
 
 namespace Mcp {
 
 McpClientAuthorizationImpl::McpClientAuthorizationImpl()
-	: m_redirect_port_no(-1)
 {
 }
 
@@ -33,14 +37,74 @@ void McpClientAuthorizationImpl::Reset()
 	m_token = "";
 }
 
-bool McpClientAuthorizationImpl::GetServerMeta(const std::string& resource_meta_url)
+bool McpClientAuthorizationImpl::OpenCallbackServer()
 {
+	std::string host = "localhost:";
+	host += std::to_string(m_redirect_port_no);
+
+	mg_mgr* mgr = new mg_mgr;
+	m_mgr = mgr;
+	mg_mgr_init(mgr);
+
+	if (mg_http_listen(
+		mgr,
+		host.c_str(),
+		(mg_event_handler_t)cbEvHander,
+		this) == nullptr)
+	{
+		return false;
+	}
+
+	m_is_running = true;
+
+	m_callback_worker = std::make_unique<std::thread>([this]
+	{
+		mg_mgr* mgr = (mg_mgr *)this->m_mgr;
+		while (this->m_is_running)
+		{
+			mg_mgr_poll(mgr, 50);
+		}
+	});
+
 	return true;
 }
 
-bool McpClientAuthorizationImpl::DynamicRegistration(const std::string& client_name)
+void McpClientAuthorizationImpl::cbEvHander(void* connection, int event_code, void* event_data)
 {
-	return true;
+	mg_connection* conn = (mg_connection*)connection;
+	McpClientAuthorizationImpl* self = (McpClientAuthorizationImpl*)conn->fn_data;
+
+	if (event_code == MG_EV_HTTP_MSG)
+	{
+		struct mg_http_message* hm = (struct mg_http_message*)event_data;
+		if (mg_strcasecmp(hm->method, mg_str("GET")) == 0)
+		{
+			if (mg_match(hm->uri, mg_str("/callback"), NULL))
+			{
+				mg_str v = mg_http_var(hm->query, mg_str("code"));  
+				mg_http_reply(conn, 200, "", "OK!");			// #TODO#
+
+				std::string code;
+				code.assign(v.buf, v.len);
+				self->SetAuthorizationCode(code);
+			}
+		}
+	}
+}
+
+void McpClientAuthorizationImpl::CloseCallbackServer()
+{
+	m_is_running = false;
+
+	if (m_callback_worker && m_callback_worker->joinable())
+	{
+		m_callback_worker->join();
+		m_callback_worker.reset();
+	}
+
+	mg_mgr* mgr = (mg_mgr*)m_mgr;
+	mg_mgr_free(mgr);
+	m_mgr = nullptr;
 }
 
 bool McpClientAuthorizationImpl::Authorize(
@@ -49,35 +113,45 @@ bool McpClientAuthorizationImpl::Authorize(
 	std::function <bool(const std::string& url)> open_browser
 )
 {
-	if (!GetServerMeta(resource_meta_url))
+	if (m_redirect_url.empty())
 	{
-		return false;
-	}
-
-	if (m_client_id.empty())
-	{
-		if (!DynamicRegistration(client_name))
+		if (!OpenCallbackServer())
 		{
 			return false;
 		}
 	}
 
-	if (m_redirect_url.empty())
+	if (!GetOAuthProtectedResource(resource_meta_url))
 	{
-		// ...
+		CloseCallbackServer();
+		return false;
+	}
+	if (!GetResourceMetaData())
+	{
+		CloseCallbackServer();
+		return false;
+	}
+	if (m_client_id.empty())
+	{
+		if (!DynamicRegistration(client_name))
+		{
+			CloseCallbackServer();
+			return false;
+		}
 	}
 
-	std::string url;
+	std::string url = GetAuthUrl();
 
 	if (open_browser)
 	{
 		if (!open_browser(url))
 		{
+			CloseCallbackServer();
 			return false;
 		}
 	}
 	else
-{
+	{
 #ifdef _WIN32
 		std::string cmd = "start \"\" \"" + url + "\"";
 #else
@@ -85,26 +159,379 @@ bool McpClientAuthorizationImpl::Authorize(
 #endif
 
 		std::system(cmd.c_str());
-}
+	}
 
 	if (!WaitToken())
-{
-		// ...
+	{
+		CloseCallbackServer();
 		return false;
 	}
 
-	// ...
+	if (m_redirect_url.empty())
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// #TODO#
+		CloseCallbackServer();
+	}
+
+	if (!RequestToken())
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool McpClientAuthorizationImpl::GetOAuthProtectedResource(const std::string& resource_url)
+{
+	CURL* curl = curl_easy_init();
+
+	std::string responseData;
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseData);
+
+	curl_easy_setopt(curl, CURLOPT_URL, resource_url.c_str());
+
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+	CURLcode  res = curl_easy_perform(curl);
+	if (res != CURLE_OK)
+	{
+		curl_easy_cleanup(curl);
+		return false;
+	}
+
+	long http_code;
+	res = curl_easy_getinfo(curl, CURLINFO_HTTP_CODE, &http_code);
+	if (res != CURLE_OK)
+	{
+		curl_easy_cleanup(curl);
+		return false;
+	}
+	curl_easy_cleanup(curl);
+	if (http_code != 200)
+	{
+		return false;
+	}
+
+	try
+	{
+		m_protected_resource = nlohmann::json::parse(responseData);
+	}
+	catch (const nlohmann::json::parse_error& e)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool McpClientAuthorizationImpl::GetResourceMetaData()
+{
+	auto it = m_protected_resource.find("authorization_servers");
+	if (it == m_protected_resource.end())
+	{
+		return false;
+	}
+
+	auto& authorization_servers = it.value();
+
+	for (auto it2 = authorization_servers.begin(); it2 != authorization_servers.end(); it2++)
+	{
+		std::string resource_url = *it2;
+		if (resource_url.back() != '/')
+		{
+			resource_url += '/';
+		}
+		resource_url += ".well-known/oauth-authorization-server";
+
+		CURL* curl = curl_easy_init();
+
+		std::string responseData;
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseData);
+
+		curl_easy_setopt(curl, CURLOPT_URL, resource_url.c_str());
+
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+		CURLcode  res = curl_easy_perform(curl);
+		if (res != CURLE_OK)
+		{
+			curl_easy_cleanup(curl);
+			return false;
+		}
+
+		long http_code;
+		res = curl_easy_getinfo(curl, CURLINFO_HTTP_CODE, &http_code);
+		if (res != CURLE_OK)
+		{
+			curl_easy_cleanup(curl);
+			return false;
+		}
+		curl_easy_cleanup(curl);
+		if (http_code != 200)
+		{
+			return false;
+		}
+
+		try
+		{
+			m_resource_meta_data = nlohmann::json::parse(responseData);
+		}
+		catch (const nlohmann::json::parse_error& e)
+		{
+			return false;
+		}
+
+		m_authorization_server = *it2;
+
+		return true;
+	}
+
+	return false;
+}
+
+bool McpClientAuthorizationImpl::DynamicRegistration(const std::string& client_name)
+{
+	auto it = m_resource_meta_data.find("registration_endpoint");
+	if (it == m_resource_meta_data.end())
+	{
+		return false;
+	}
+	std::string regist_url = *it;
+
+	auto regist_json = R"(
+	{
+		"redirect_uris": [],
+		"token_endpoint_auth_method": "none",
+		"grant_types": ["authorization_code", "refresh_token"],
+		"response_types": ["code"],
+		"client_name": ""
+	}
+	)"_json;
+
+	regist_json["redirect_uris"].push_back(GetRedirectUrl());
+	regist_json["client_name"] = client_name;
+
+	std::string request = regist_json.dump();
+
+	CURL* curl = curl_easy_init();
+
+	std::string responseData;
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseData);
+
+	struct curl_slist* headers = NULL;
+	headers = curl_slist_append(headers, "Content-Type: application/json");
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+	curl_easy_setopt(curl, CURLOPT_URL, regist_url.c_str());
+
+	curl_easy_setopt(curl, CURLOPT_POST, 1L);
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE_LARGE, request.length());
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request.c_str());
+
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+	CURLcode res = curl_easy_perform(curl);
+	curl_slist_free_all(headers);
+	if (res != CURLE_OK)
+	{
+		curl_easy_cleanup(curl);
+		return false;
+	}
+
+	long http_code;
+	res = curl_easy_getinfo(curl, CURLINFO_HTTP_CODE, &http_code);
+	if (res != CURLE_OK)
+	{
+		curl_easy_cleanup(curl);
+		return false;
+	}
+	curl_easy_cleanup(curl);
+	if (http_code != 201)
+	{
+		return false;
+	}
+
+	try
+	{
+		auto client_data = nlohmann::json::parse(responseData);
+
+		auto it = client_data.find("client_id");
+		if (it == client_data.end())
+		{
+			return false;
+		}
+		m_client_id = *it;
+
+		auto it2 = client_data.find("client_secret");
+		if (it2 == client_data.end())
+		{
+			return false;
+		}
+		m_client_secret = *it2;
+	}
+	catch (const nlohmann::json::parse_error& e)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool McpClientAuthorizationImpl::WaitToken()
+{
+	std::unique_lock<std::mutex> lock(m_code_mutex);
+	if (m_code_cv.wait_for(lock, std::chrono::milliseconds(m_timeout)) == std::cv_status::timeout)
+	{
+		return true;
+	}
 
 	return true;
 }
 
 void McpClientAuthorizationImpl::SetAuthorizationCode(const std::string& code)
 {
+	m_code = code;
+	m_code_cv.notify_one();
 }
 
-bool McpClientAuthorizationImpl::WaitToken()
+bool McpClientAuthorizationImpl::RequestToken()
 {
+	auto it = m_resource_meta_data.find("token_endpoint");
+	if (it == m_resource_meta_data.end())
+	{
+		return false;
+	}
+	std::string token_url = *it;
+
+	CURL* curl = curl_easy_init();
+
+	std::string responseData;
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseData);
+
+	struct curl_slist* headers = NULL;
+	headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+	curl_easy_setopt(curl, CURLOPT_URL, token_url.c_str());
+
+	std::string request = "client_id=";
+	request += m_client_id;
+	request += "&scope=";
+	request += m_scope;
+	request += "&code=";
+	request += m_code;
+	request += "&redirect_uri=";
+	request += GetRedirectUrl();
+	request += "&grant_type=authorization_code&client_secret=";
+	request += m_client_secret;
+
+	curl_easy_setopt(curl, CURLOPT_POST, 1L);
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE_LARGE, request.length());
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request.c_str());
+
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+	CURLcode res = curl_easy_perform(curl);
+	curl_slist_free_all(headers);
+	if (res != CURLE_OK)
+	{
+		curl_easy_cleanup(curl);
+		return false;
+	}
+
+	long http_code;
+	res = curl_easy_getinfo(curl, CURLINFO_HTTP_CODE, &http_code);
+	if (res != CURLE_OK)
+	{
+		curl_easy_cleanup(curl);
+		return false;
+	}
+	curl_easy_cleanup(curl);
+	if (http_code != 200)
+	{
+		return false;
+	}
+
+	try
+	{
+		auto client_data = nlohmann::json::parse(responseData);
+
+		auto it = client_data.find("access_token");
+		if (it == client_data.end())
+		{
+			return false;
+		}
+		m_token = *it;
+	}
+	catch (const nlohmann::json::parse_error& e)
+	{
+		return false;
+	}
+
 	return true;
+}
+
+std::string McpClientAuthorizationImpl::GetRedirectUrl()
+{
+	if (!m_redirect_url.empty())
+	{
+		return m_redirect_url;
+	}
+
+	std::string redirect_url = "http://localhost:";
+	redirect_url += std::to_string(m_redirect_port_no);
+	redirect_url += "/callback";
+	return redirect_url;
+}
+
+std::string McpClientAuthorizationImpl::GetAuthUrl()
+{
+	auto it = m_resource_meta_data.find("authorization_endpoint");
+	if (it == m_resource_meta_data.end())
+	{
+		return "";
+	}
+
+	std::string auth_url = *it;
+	auth_url += "?client_id=";
+	auth_url += m_client_id;
+	auth_url += "&response_type=code&redirect_uri=";
+	auth_url += GetRedirectUrl();
+
+	auto it2 = m_protected_resource.find("scopes_supported");
+	if (it2 != m_protected_resource.end())
+	{
+		auto& scopes_supported = it2.value();
+		for (auto it3 = scopes_supported.begin(); it3 != scopes_supported.end(); it3++)
+		{
+			auth_url += "&scope=";
+			auth_url += *it3;
+			m_scope = *it3;
+			break;
+		}
+	}
+
+	return auth_url;
+}
+
+size_t McpClientAuthorizationImpl::WriteCallback(char* ptr, size_t size, size_t nmemb, void* userdata)
+{
+	auto responseData = (std::string*)userdata;
+
+	size_t totalSize = size * nmemb;
+	responseData->append(ptr, totalSize);
+	return totalSize;
 }
 
 }

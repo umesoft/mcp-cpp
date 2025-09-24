@@ -33,6 +33,8 @@ public:
 	const std::string& GetClientId() const;
 	const std::string& GetClientSecret() const;
 
+	void SetTimeout(int timeout);
+
 	virtual void SetAuthorizationCode(const std::string& code) = 0;
 
 protected:
@@ -41,6 +43,8 @@ protected:
 
 	std::string m_client_id;
 	std::string m_client_secret;
+
+	int m_timeout;
 
 	McpClientAuthorization();
 };

@@ -21,6 +21,7 @@ namespace Mcp {
 
 McpClientAuthorization::McpClientAuthorization()
 	: m_redirect_port_no(-1)
+	, m_timeout(60 * 1000)
 {
 }
 
@@ -54,6 +55,11 @@ const std::string& McpClientAuthorization::GetClientId() const
 const std::string& McpClientAuthorization::GetClientSecret() const
 {
 	return m_client_secret;
+}
+
+void McpClientAuthorization::SetTimeout(int timeout)
+{
+	m_timeout = timeout;
 }
 
 }

@@ -46,14 +46,20 @@ int main()
 #endif
 
     auto client = McpClient::CreateInstance("MCP Test Client", "1.0.0.0");
-	client->Initialize(transport);
+	if (!client->Initialize(transport))
+	{
+		return 0;
+	}
 	
 	std::vector<McpTool> tools;
-	client->ToolsList(tools);
+	if (!client->ToolsList(tools))
+	{
+		return 0;
+	}
 
 	nlohmann::json content;
-	client->ToolsCall(
-		"count_down", 
+	if (!client->ToolsCall(
+		"count_down",
 		{
 			{ "value", "5"  }
 		},
@@ -63,7 +69,10 @@ int main()
 			std::cout << "Notification: " << method << std::endl << params.dump(2) << std::endl;
 			return true;
 		}
-	);
+	))
+	{
+		return 0;
+	}
 
 	std::cout << "content: " << content.dump(2) << std::endl;
 
