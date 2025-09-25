@@ -52,6 +52,7 @@ private:
 	std::string m_entry_point;
 	std::string m_url;
 
+	std::function <bool(const std::string& response)> m_callback;
 	std::function <bool(const std::string& url)> m_auth_callback;
 
 	std::unique_ptr<McpClientAuthorizationImpl> m_authorization;
@@ -68,7 +69,12 @@ private:
 	static size_t HeaderCallback(char* ptr, size_t size, size_t nmemb, void* userdata);
 	static size_t WriteCallback(char* ptr, size_t size, size_t nmemb, void* userdata);
 
-	bool Send(const std::string& request, std::string& response, int& status_code);
+	bool Send(
+		const std::string& request, 
+		std::function <bool(const std::string& response)> callback,
+		std::string& response, 
+		int& status_code
+	);
 
 	std::optional<std::string> ExtractResourceMetadata(const std::string& header);
 };

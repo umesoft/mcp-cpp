@@ -31,7 +31,6 @@ The following features have been implemented:
 Now developping:
 
 - PKCE support
-- Streamable HTTP Notification in Client.
 
 ## Build
 

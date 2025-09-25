@@ -94,7 +94,20 @@ size_t McpHttpClientTransportImpl::WriteCallback(char* ptr, size_t size, size_t 
 			break;
 		}
 
-        self->m_response = self->m_response_buffer.substr(0, pos);
+        std::string response = self->m_response_buffer.substr(0, pos);;
+        if (self->m_callback != nullptr)
+        {
+            const std::string prefix = "event: message\ndata: ";
+            if (response.rfind(prefix, 0) == 0)
+            {
+                response = response.substr(prefix.size());
+                if (self->m_callback(response))
+                {
+                    self->m_response = response;
+                }
+            }
+        }
+
 		self->m_response_buffer = self->m_response_buffer.substr(pos + 2);
     }
 
@@ -119,7 +132,7 @@ bool McpHttpClientTransportImpl::Initialize(
 
 	std::string response;
     int status_code = 0;
-    if (!Send(request, response, status_code))
+    if (!Send(request, callback, response, status_code))
     {
         if (status_code == 401)
         {
@@ -141,7 +154,7 @@ bool McpHttpClientTransportImpl::Initialize(
                 }
 
                 status_code = 0;
-                if (!Send(request, response, status_code))
+                if (!Send(request, callback, response, status_code))
                 {
                     return false;
                 }
@@ -188,7 +201,7 @@ bool McpHttpClientTransportImpl::SendRequest(
 {
 	std::string response;
 	int status_code = 0;
-    if (!Send(request, response, status_code))
+    if (!Send(request, callback, response, status_code))
     {
         return false;
     }
@@ -200,10 +213,15 @@ bool McpHttpClientTransportImpl::SendNotification(const std::string& notificatio
 {
 	std::string response;
     int status_code = 0;
-    return Send(notification, response, status_code);
+    return Send(notification, nullptr, response, status_code);
 }
 
-bool McpHttpClientTransportImpl::Send(const std::string& request, std::string& response, int& status_code)
+bool McpHttpClientTransportImpl::Send(
+    const std::string& request,
+    std::function <bool(const std::string& response)> callback,
+    std::string& response,
+    int& status_code
+)
 {
     if (m_curl == nullptr)
     {
@@ -236,7 +254,11 @@ bool McpHttpClientTransportImpl::Send(const std::string& request, std::string& r
     m_response = "";
     m_response_buffer = "";
 
+    m_callback = callback;
+
     CURLcode  res = curl_easy_perform(m_curl);
+
+    m_callback = nullptr;
 
     curl_slist_free_all(headers);
 
@@ -256,12 +278,11 @@ bool McpHttpClientTransportImpl::Send(const std::string& request, std::string& r
 
     if (status_code == 200)
     {
-        const std::string prefix = "event: message\ndata: ";
-        if (m_response.rfind(prefix, 0) != 0)
+        if (m_response.empty())
         {
             return false;
         }
-        response = m_response.substr(prefix.size());
+        response = m_response;
         return true;
     }
     else if (status_code == 202)
