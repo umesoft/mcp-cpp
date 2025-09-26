@@ -32,10 +32,13 @@ The following features have been implemented:
 
 Use cmake or vc.
 
-## Dependencies libraries
+## Dependencies
 
+- cjose (https://github.com/OpenIDC/cjose)
+- jansson (https://github.com/akheron/jansson)
 - JWT++ (https://github.com/Thalhammer/jwt-cpp)
 - JSON for Modern C++ (https://github.com/nlohmann/json)
-- libcurl
+- libcurl (https://curl.se/libcurl/)
+- liboauth2 (https://github.com/OpenIDC/liboauth2)
 - Mongoose (https://github.com/cesanta/mongoose)
-- OpenSSL
+- OpenSSL (https://www.openssl.org/)
