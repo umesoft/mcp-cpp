@@ -28,10 +28,6 @@ The following features have been implemented:
   - Call
   - Notification  
 
-Now developping:
-
-- PKCE support
-
 ## Build
 
 Use cmake or vc.
