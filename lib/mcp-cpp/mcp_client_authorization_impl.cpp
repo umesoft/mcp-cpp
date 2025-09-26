@@ -504,36 +504,6 @@ bool McpClientAuthorizationImpl::RequestToken()
 	return true;
 }
 
-#define OAUTH2_PKCE_LENGTH 48
-
-void McpClientAuthorizationImpl::GeneratePCKE()
-{
-	oauth2_log_t* log = oauth2_init(OAUTH2_LOG_INFO, 0);
-
-	char* pkce = oauth2_rand_str(log, OAUTH2_PKCE_LENGTH);
-
-	unsigned char *dst = NULL;
-	unsigned int dst_len = 0;
-	oauth2_jose_hash_bytes(
-		log, 
-		"sha256", 
-		(const unsigned char *)pkce,
-		strlen(pkce), 
-		&dst, 
-		&dst_len
-	);
-	char *code_challenge;
-	oauth2_base64url_encode(log, dst, dst_len, &code_challenge);
-
-	m_code_verifier = pkce;
-	m_code_challenge = code_challenge;
-
-	oauth2_mem_free(pkce);
-	oauth2_mem_free(code_challenge);
-
-	oauth2_shutdown(log);	
-}
-
 std::string McpClientAuthorizationImpl::GetRedirectUrl()
 {
 	if (!m_redirect_url.empty())
@@ -555,7 +525,7 @@ std::string McpClientAuthorizationImpl::GetAuthUrl()
 		return "";
 	}
 
-	GeneratePCKE();
+	GeneratePKCE();
 
 	std::string auth_url = *it;
 	auth_url += "?client_id=";
@@ -579,6 +549,36 @@ std::string McpClientAuthorizationImpl::GetAuthUrl()
 	}
 
 	return auth_url;
+}
+
+#define OAUTH2_PKCE_LENGTH 48
+
+void McpClientAuthorizationImpl::GeneratePKCE()
+{
+	oauth2_log_t* log = oauth2_init(OAUTH2_LOG_INFO, 0);
+
+	char* pkce = oauth2_rand_str(log, OAUTH2_PKCE_LENGTH);
+
+	unsigned char* dst = NULL;
+	unsigned int dst_len = 0;
+	oauth2_jose_hash_bytes(
+		log,
+		"sha256",
+		(const unsigned char*)pkce,
+		strlen(pkce),
+		&dst,
+		&dst_len
+	);
+	char* code_challenge;
+	oauth2_base64url_encode(log, dst, dst_len, &code_challenge);
+
+	m_code_verifier = pkce;
+	m_code_challenge = code_challenge;
+
+	oauth2_mem_free(pkce);
+	oauth2_mem_free(code_challenge);
+
+	oauth2_shutdown(log);
 }
 
 size_t McpClientAuthorizationImpl::WriteCallback(char* ptr, size_t size, size_t nmemb, void* userdata)

@@ -70,9 +70,9 @@ private:
 	bool WaitToken();
 	bool RequestToken();
 
-	void GeneratePCKE();
 	std::string GetRedirectUrl();
 	std::string GetAuthUrl();
+	void GeneratePKCE();
 
 	static size_t WriteCallback(char* ptr, size_t size, size_t nmemb, void* responseData);
 };
