@@ -80,6 +80,28 @@ bool McpClientAuthorizationImpl::OpenCallbackServer()
 		{
 			mg_mgr_poll(mgr, 50);
 		}
+		while (true)
+		{
+			bool is_sending = false;
+
+			mg_connection* conn = mgr->conns;
+			while (conn != nullptr)
+			{
+				if (conn->is_writable)
+				{
+					is_sending = true;
+					break;
+				}
+				conn = conn->next;
+			}
+
+			if (!is_sending)
+			{
+				break;
+			}
+
+			mg_mgr_poll(mgr, 1);
+		}
 	});
 
 	return true;
@@ -189,7 +211,6 @@ bool McpClientAuthorizationImpl::Authorize(
 
 	if (m_redirect_url.empty())
 	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));	// #TODO#
 		CloseCallbackServer();
 	}
 
