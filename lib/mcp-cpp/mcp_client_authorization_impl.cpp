@@ -120,8 +120,12 @@ void McpClientAuthorizationImpl::cbEvHander(void* connection, int event_code, vo
 			if (mg_match(hm->uri, mg_str("/callback"), NULL))
 			{
 				mg_str v = mg_http_var(hm->query, mg_str("code"));  
-				mg_http_reply(conn, 200, "", "OK!");			// #TODO#
-
+				mg_http_reply(
+					conn, 
+					200, 
+					"", 
+					"<!DOCTYPE html><html><head><script>window.onload=function(){window.open('about:blank', '_self').close();};</script></head><body>Please close your browser.</body></html>"
+				);
 				std::string code;
 				code.assign(v.buf, v.len);
 				self->SetAuthorizationCode(code);
