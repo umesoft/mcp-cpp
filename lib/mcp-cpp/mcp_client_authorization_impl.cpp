@@ -22,6 +22,13 @@
 
 #include "mcp_client_authorization_impl.h"
 
+extern "C"
+{
+#include "oauth2/jose.h"
+#include "oauth2/mem.h"
+#include "oauth2/util.h"
+}
+
 namespace Mcp {
 
 McpClientAuthorizationImpl::McpClientAuthorizationImpl()
@@ -438,6 +445,8 @@ bool McpClientAuthorizationImpl::RequestToken()
 	request += m_client_id;
 	request += "&scope=";
 	request += m_scope;
+	request += "&code_verifier=";
+	request += m_code_verifier;	
 	request += "&code=";
 	request += m_code;
 	request += "&redirect_uri=";
@@ -495,6 +504,36 @@ bool McpClientAuthorizationImpl::RequestToken()
 	return true;
 }
 
+#define OAUTH2_PKCE_LENGTH 48
+
+void McpClientAuthorizationImpl::GeneratePCKE()
+{
+	oauth2_log_t* log = oauth2_init(OAUTH2_LOG_INFO, 0);
+
+	char* pkce = oauth2_rand_str(log, OAUTH2_PKCE_LENGTH);
+
+	unsigned char *dst = NULL;
+	unsigned int dst_len = 0;
+	oauth2_jose_hash_bytes(
+		log, 
+		"sha256", 
+		(const unsigned char *)pkce,
+		strlen(pkce), 
+		&dst, 
+		&dst_len
+	);
+	char *code_challenge;
+	oauth2_base64url_encode(log, dst, dst_len, &code_challenge);
+
+	m_code_verifier = pkce;
+	m_code_challenge = code_challenge;
+
+	oauth2_mem_free(pkce);
+	oauth2_mem_free(code_challenge);
+
+	oauth2_shutdown(log);	
+}
+
 std::string McpClientAuthorizationImpl::GetRedirectUrl()
 {
 	if (!m_redirect_url.empty())
@@ -516,9 +555,13 @@ std::string McpClientAuthorizationImpl::GetAuthUrl()
 		return "";
 	}
 
+	GeneratePCKE();
+
 	std::string auth_url = *it;
 	auth_url += "?client_id=";
 	auth_url += m_client_id;
+	auth_url += "&code_challenge=";
+	auth_url += m_code_challenge;
 	auth_url += "&response_type=code&redirect_uri=";
 	auth_url += GetRedirectUrl();
 

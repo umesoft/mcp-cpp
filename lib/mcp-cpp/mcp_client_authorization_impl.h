@@ -46,6 +46,8 @@ private:
 	std::string m_authorization_server;
 	nlohmann::json m_resource_meta_data;
 	std::string m_scope;
+	std::string m_code_verifier;
+	std::string m_code_challenge;
 	std::string m_code;
 
 	std::string m_token;
@@ -68,6 +70,7 @@ private:
 	bool WaitToken();
 	bool RequestToken();
 
+	void GeneratePCKE();
 	std::string GetRedirectUrl();
 	std::string GetAuthUrl();
 
