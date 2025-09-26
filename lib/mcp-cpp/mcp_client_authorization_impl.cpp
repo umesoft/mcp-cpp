@@ -560,7 +560,7 @@ std::string McpClientAuthorizationImpl::GetAuthUrl()
 	std::string auth_url = *it;
 	auth_url += "?client_id=";
 	auth_url += m_client_id;
-	auth_url += "&code_challenge=";
+	auth_url += "&code_challenge_method=S256&code_challenge=";
 	auth_url += m_code_challenge;
 	auth_url += "&response_type=code&redirect_uri=";
 	auth_url += GetRedirectUrl();
