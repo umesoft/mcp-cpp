@@ -194,9 +194,13 @@ void McpHttpServerTransportImpl::cbEvHander(void* connection, int event_code, vo
 			{
 				if (self->m_use_authorization)
 				{
-					bool authorization_chk = false;
+					int ret_code = 400;
 
-					if (!auth_token.empty() && 7 <= auth_token.length())
+					if (auth_token.empty())
+					{
+						ret_code = 401;
+					}
+					else if (7 <= auth_token.length())
 					{
 						std::string::size_type aPos = auth_token.find_first_of("Bearer ");
 						if (aPos != std::string::npos)
@@ -210,16 +214,21 @@ void McpHttpServerTransportImpl::cbEvHander(void* connection, int event_code, vo
 								std::string aud_value = payload["aud"].get<std::string>();
 								if (aud_value == self->m_url)
 								{
-									authorization_chk = true;
+									ret_code = 0;
+								}
+								else
+								{
+									ret_code = 403;
 								}
 							}
 							catch (std::exception& ex)
 							{
+								ret_code = 400;
 							}
 						}
 					}
 
-					if (!authorization_chk)
+					if (ret_code != 0)
 					{
 						std::string authenticate_header = "WWW-Authenticate: Bearer resource_metadata=\"";
 						authenticate_header.append(self->m_host);
@@ -228,7 +237,7 @@ void McpHttpServerTransportImpl::cbEvHander(void* connection, int event_code, vo
 						authenticate_header.append("\"\r\n");
 						mg_http_reply(
 							conn,
-							401,
+							ret_code,
 							authenticate_header.c_str(),
 							""
 						);
