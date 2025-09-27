@@ -22,7 +22,7 @@
 
 #include "mcp_client_authorization_impl.h"
 #include "openssl/rand.h"
-#include "cjose/cjose.h"
+#include "base64.h"
 
 namespace Mcp {
 
@@ -639,18 +639,9 @@ bool McpClientAuthorizationImpl::GenerateCodeChallenge()
 
 	EVP_MD_CTX_free(ctx);
 
-	char* code_challenge = nullptr;
-	size_t out_len = 0;
-	cjose_err err;
-	memset(&err, 0, sizeof(err));
-
-	if (!cjose_base64url_encode(md_value, md_len, &code_challenge, &out_len, &err))
-	{
-		return false;
-	}
+	char* code_challenge = base64Encode((char*)md_value, md_len, BASE64_TYPE_URL);
 	m_code_challenge = code_challenge;
-
-	cjose_get_dealloc()(code_challenge);
+	free(code_challenge);
 
 	return true;
 }

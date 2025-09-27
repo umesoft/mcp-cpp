@@ -34,8 +34,6 @@ Use cmake or vc.
 
 ## Dependencies
 
-- cjose (https://github.com/OpenIDC/cjose)
-- jansson (https://github.com/akheron/jansson)
 - JWT++ (https://github.com/Thalhammer/jwt-cpp)
 - JSON for Modern C++ (https://github.com/nlohmann/json)
 - libcurl (https://curl.se/libcurl/)
