@@ -24,4 +24,4 @@ add_library(mcp-cpp STATIC
 
 target_include_directories(mcp-cpp PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
-target_link_libraries(mcp-cpp PRIVATE ssl crypto oauth2 PkgConfig::uuid ${CURL_LIBRARIES})
+target_link_libraries(mcp-cpp PRIVATE ssl crypto PkgConfig::uuid ${CURL_LIBRARIES})

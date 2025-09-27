@@ -21,13 +21,8 @@
 #include "mongoose.c"
 
 #include "mcp_client_authorization_impl.h"
-
-extern "C"
-{
-#include "oauth2/jose.h"
-#include "oauth2/mem.h"
-#include "oauth2/util.h"
-}
+#include "openssl/rand.h"
+#include "cjose/cjose.h"
 
 namespace Mcp {
 
@@ -550,7 +545,14 @@ std::string McpClientAuthorizationImpl::GetAuthUrl()
 		return "";
 	}
 
-	GeneratePKCE();
+	if (!GenerateCodeVerifier())
+	{
+		return "";
+	}
+	if (!GenerateCodeChallenge())
+	{
+		return "";
+	}
 
 	std::string auth_url = *it;
 	auth_url += "?client_id=";
@@ -576,34 +578,81 @@ std::string McpClientAuthorizationImpl::GetAuthUrl()
 	return auth_url;
 }
 
-#define OAUTH2_PKCE_LENGTH 48
-
-void McpClientAuthorizationImpl::GeneratePKCE()
+bool McpClientAuthorizationImpl::GenerateCodeVerifier()
 {
-	oauth2_log_t* log = oauth2_init(OAUTH2_LOG_INFO, 0);
+	const int PKCE_LENGTH = 48;
+	const int half_len = PKCE_LENGTH / 2;
 
-	char* pkce = oauth2_rand_str(log, OAUTH2_PKCE_LENGTH);
+	unsigned char buf[half_len];
+	if (RAND_bytes(buf, half_len) <= 0)
+	{
+		return false;
+	}
 
-	unsigned char* dst = NULL;
-	unsigned int dst_len = 0;
-	oauth2_jose_hash_bytes(
-		log,
-		"sha256",
-		(const unsigned char*)pkce,
-		strlen(pkce),
-		&dst,
-		&dst_len
-	);
-	char* code_challenge;
-	oauth2_base64url_encode(log, dst, dst_len, &code_challenge);
+	m_code_verifier.clear();
+	for (int i = 0; i < half_len; i++)
+	{
+		m_code_verifier.append(std::format("{:x}", buf[i]));
+	}
 
-	m_code_verifier = pkce;
+	return true;
+}
+
+bool McpClientAuthorizationImpl::GenerateCodeChallenge()
+{
+	EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+	if (ctx == nullptr)
+	{
+		return false;
+	}
+	EVP_MD_CTX_init(ctx);
+
+	const EVP_MD* evp_digest = EVP_sha256();
+	if (evp_digest == nullptr)
+	{
+		EVP_MD_CTX_free(ctx);
+		return false;
+	}
+
+	if (!EVP_DigestInit_ex(ctx, evp_digest, nullptr))
+	{
+		EVP_MD_CTX_free(ctx);
+		return false;
+	}
+
+	if (!EVP_DigestUpdate(
+		ctx,
+		m_code_verifier.c_str(),
+		m_code_verifier.length()))
+	{
+		EVP_MD_CTX_free(ctx);
+		return false;
+	}
+
+	unsigned char md_value[EVP_MAX_MD_SIZE];
+	unsigned int md_len = 0;
+	if (!EVP_DigestFinal(ctx, md_value, &md_len))
+	{
+		EVP_MD_CTX_free(ctx);
+		return false;
+	}
+
+	EVP_MD_CTX_free(ctx);
+
+	char* code_challenge = nullptr;
+	size_t out_len = 0;
+	cjose_err err;
+	memset(&err, 0, sizeof(err));
+
+	if (!cjose_base64url_encode(md_value, md_len, &code_challenge, &out_len, &err))
+	{
+		return false;
+	}
 	m_code_challenge = code_challenge;
 
-	oauth2_mem_free(pkce);
-	oauth2_mem_free(code_challenge);
+	cjose_get_dealloc()(code_challenge);
 
-	oauth2_shutdown(log);
+	return true;
 }
 
 size_t McpClientAuthorizationImpl::WriteCallback(char* ptr, size_t size, size_t nmemb, void* userdata)
