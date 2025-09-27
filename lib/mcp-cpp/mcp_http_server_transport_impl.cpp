@@ -106,8 +106,8 @@ void McpHttpServerTransportImpl::UpdateUrl()
 	{
 		m_url = "http://";
 	}
-	m_url += m_host;
-	m_url += m_entry_point;
+	m_url.append(m_host);
+	m_url.append(m_entry_point);
 }
 
 void McpHttpServerTransportImpl::OnClose()
@@ -201,14 +201,20 @@ void McpHttpServerTransportImpl::cbEvHander(void* connection, int event_code, vo
 						std::string::size_type aPos = auth_token.find_first_of("Bearer ");
 						if (aPos != std::string::npos)
 						{
-							std::string token = auth_token.substr(aPos + 7);
-							auto decoded = jwt::decode(token);
-							auto payload = decoded.get_payload_json();
-
-							std::string aud_value = payload["aud"].get<std::string>();
-							if (aud_value == self->m_url)
+							try
 							{
-								authorization_chk = true;
+								std::string token = auth_token.substr(aPos + 7);
+								auto decoded = jwt::decode(token);
+								auto payload = decoded.get_payload_json();
+
+								std::string aud_value = payload["aud"].get<std::string>();
+								if (aud_value == self->m_url)
+								{
+									authorization_chk = true;
+								}
+							}
+							catch (std::exception& ex)
+							{
 							}
 						}
 					}
@@ -216,10 +222,10 @@ void McpHttpServerTransportImpl::cbEvHander(void* connection, int event_code, vo
 					if (!authorization_chk)
 					{
 						std::string authenticate_header = "WWW-Authenticate: Bearer resource_metadata=\"";
-						authenticate_header += self->m_host;
-						authenticate_header += "/.well-known/oauth-protected-resource";
-						authenticate_header += self->m_entry_point;
-						authenticate_header += "\"\r\n";
+						authenticate_header.append(self->m_host);
+						authenticate_header.append("/.well-known/oauth-protected-resource");
+						authenticate_header.append(self->m_entry_point);
+						authenticate_header.append("\"\r\n");
 						mg_http_reply(
 							conn,
 							401,
