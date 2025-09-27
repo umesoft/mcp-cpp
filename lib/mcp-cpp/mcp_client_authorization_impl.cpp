@@ -49,7 +49,7 @@ bool McpClientAuthorizationImpl::OpenCallbackServer()
 	}
 
 	std::string host = "localhost:";
-	host += std::to_string(m_redirect_port_no);
+	host.append(std::to_string(m_redirect_port_no));
 
 	mg_mgr* mgr = new mg_mgr;
 	mg_mgr_init(mgr);
@@ -281,9 +281,9 @@ bool McpClientAuthorizationImpl::GetResourceMetaData()
 		std::string resource_url = *it2;
 		if (resource_url.back() != '/')
 		{
-			resource_url += '/';
+			resource_url.append("/");
 		}
-		resource_url += ".well-known/oauth-authorization-server";
+		resource_url.append(".well-known/oauth-authorization-server");
 
 		CURL* curl = curl_easy_init();
 
@@ -462,17 +462,17 @@ bool McpClientAuthorizationImpl::RequestToken()
 	curl_easy_setopt(curl, CURLOPT_URL, token_url.c_str());
 
 	std::string request = "client_id=";
-	request += m_client_id;
-	request += "&scope=";
-	request += m_scope;
-	request += "&code_verifier=";
-	request += m_code_verifier;	
-	request += "&code=";
-	request += m_code;
-	request += "&redirect_uri=";
-	request += GetRedirectUrl();
-	request += "&grant_type=authorization_code&client_secret=";
-	request += m_client_secret;
+	request.append(m_client_id);
+	request.append("&scope=");
+	request.append(m_scope);
+	request.append("&code_verifier=");
+	request.append(m_code_verifier);
+	request.append("&code=");
+	request.append(m_code);
+	request.append("&redirect_uri=");
+	request.append(GetRedirectUrl());
+	request.append("&grant_type=authorization_code&client_secret=");
+	request.append(m_client_secret);
 
 	curl_easy_setopt(curl, CURLOPT_POST, 1L);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE_LARGE, request.length());
@@ -532,8 +532,8 @@ std::string McpClientAuthorizationImpl::GetRedirectUrl()
 	}
 
 	std::string redirect_url = "http://localhost:";
-	redirect_url += std::to_string(m_redirect_port_no);
-	redirect_url += "/callback";
+	redirect_url.append(std::to_string(m_redirect_port_no));
+	redirect_url.append("/callback");
 	return redirect_url;
 }
 
@@ -555,12 +555,12 @@ std::string McpClientAuthorizationImpl::GetAuthUrl()
 	}
 
 	std::string auth_url = *it;
-	auth_url += "?client_id=";
-	auth_url += m_client_id;
-	auth_url += "&code_challenge_method=S256&code_challenge=";
-	auth_url += m_code_challenge;
-	auth_url += "&response_type=code&redirect_uri=";
-	auth_url += GetRedirectUrl();
+	auth_url.append("?client_id=");
+	auth_url.append(m_client_id);
+	auth_url.append("&code_challenge_method=S256&code_challenge=");
+	auth_url.append(m_code_challenge);
+	auth_url.append("&response_type=code&redirect_uri=");
+	auth_url.append(GetRedirectUrl());
 
 	auto it2 = m_protected_resource.find("scopes_supported");
 	if (it2 != m_protected_resource.end())
@@ -568,8 +568,8 @@ std::string McpClientAuthorizationImpl::GetAuthUrl()
 		auto& scopes_supported = it2.value();
 		for (auto it3 = scopes_supported.begin(); it3 != scopes_supported.end(); it3++)
 		{
-			auth_url += "&scope=";
-			auth_url += *it3;
+			auth_url.append("&scope=");
+			auth_url.append(*it3);
 			m_scope = *it3;
 			break;
 		}
